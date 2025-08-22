@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GraphQL Data Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Search Your Data</h1>
+        <p class="hint">Enter a keyword (e.g., 'III. Weg', 'AfD') to filter results by the 'Merkmal' column.</p>
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Enter search keyword...">
+            <button class="search-button" onclick="searchData()">Search</button>
+        </div>
+        <h2>Results:</h2>
+        <pre id="resultsPre">
+            <span style="color: #888;">Your search results will appear here.</span>
+        </pre>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
