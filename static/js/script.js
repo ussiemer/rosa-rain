@@ -6,7 +6,9 @@ async function searchData() {
 
     const query = `
     query GetData($keyword: String) {
-        allData(MerkmalUnnamed0Level1: $keyword) {
+        allData(
+            MerkmalUnnamed0Level1: $keyword
+        ) {
             MerkmalUnnamed0Level1
             ErststimmenmoreErststimmenAnzahl
             ErststimmenmoreErststimmenAnteil
@@ -38,10 +40,16 @@ async function searchData() {
         if (data.errors && data.errors.length) {
             resultsPre.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
-            if (data.data.allData.length === 0) {
-                resultsPre.textContent = "No results found.";
+            // Client-side filtering to remove entries with votes equal to or less than 0
+            const filteredData = data.data.allData.filter(item =>
+            (item.ErststimmenmoreErststimmenAnzahl > 0) &&
+            (item.ZweitstimmenmoreZweitstimmenAnzahl > 0)
+            );
+
+            if (filteredData.length === 0) {
+                resultsPre.textContent = "No results found with more than 0 votes.";
             } else {
-                resultsPre.textContent = data.data.allData.map(
+                resultsPre.textContent = filteredData.map(
                     item => Object.entries(item).map(([k, v]) => `${k}: ${v}`).join('\n')
                 ).join('\n\n---\n\n');
             }
