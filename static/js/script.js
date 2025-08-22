@@ -41,10 +41,13 @@ async function searchData() {
             resultsPre.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
             // Client-side filtering to remove entries with votes equal to or less than 0
-            const filteredData = data.data.allData.filter(item =>
+            let filteredData = data.data.allData.filter(item =>
             (item.ErststimmenmoreErststimmenAnzahl > 0) &&
             (item.ZweitstimmenmoreZweitstimmenAnzahl > 0)
             );
+
+            // Sort the filtered data by ZweitstimmenmoreZweitstimmenAnzahl in descending order
+            filteredData.sort((a, b) => b.ZweitstimmenmoreZweitstimmenAnzahl - a.ZweitstimmenmoreZweitstimmenAnzahl);
 
             if (filteredData.length === 0) {
                 resultsPre.textContent = "No results found with more than 0 votes.";
