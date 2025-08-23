@@ -65,3 +65,22 @@ This logo image consists only of simple geometric shapes or text. It does not me
     File:Antifalogo alt2.svg
     Created: 1932
     Uploaded: 14 April 2013
+
+| Package | License | Repository Link |
+| :--- | :--- | :--- |
+| aiofiles | MIT License | [https://github.com/Tinche/aiofiles](https://github.com/Tinche/aiofiles) |
+| beautifulsoup4 | MIT License | [https://github.com/scout-on-the-move/beautifulsoup4](https://github.com/scout-on-the-move/beautifulsoup4) |
+| CairoSVG | LGPL-3.0 License | [https://github.com/Kozea/CairoSVG](https://github.com/Kozea/CairoSVG) |
+| Flask | BSD 3-Clause "New" or "Revised" License | [https://github.com/pallets/flask](https://github.com/pallets/flask) |
+| graphene | MIT License | [https://github.com/graphql-python/graphene](https://github.com/graphql-python/graphene) |
+| Hypercorn | MIT License | [https://github.com/pgjones/hypercorn](https://github.com/pgjones/hypercorn) |
+| lxml | BSD 3-Clause "New" or "Revised" License | [https://github.com/lxml/lxml](https://github.com/lxml/lxml) |
+| numpy | BSD 3-Clause "New" or "Revised" License | [https://github.com/numpy/numpy) |
+| pandas | BSD 3-Clause "New" or "Revised" License | [https://github.com/pandas-dev/pandas](https://github.com/pandas-dev/pandas) |
+| pillow | HP-1.0 License | [https://github.com/python-pillow/Pillow](https://github.com/python-pillow/Pillow) |
+| python-dotenv | BSD 3-Clause "New" or "Revised" License | [https://github.com/theskumar/python-dotenv](https://github.com/theskumar/python-dotenv) |
+| Quart | MIT License | [https://github.com/pallets/quart](https://github.com/pallets/quart) |
+| requests | Apache-2.0 License | [https://github.com/psf/requests](https://github.com/psf/requests) |
+| selenium | Apache-2.0 License | [https://github.com/SeleniumHQ/selenium](https://github.com/SeleniumHQ/selenium) |
+| trio | MIT License | [https://github.com/python-trio/trio](https://github.com/python-trio/trio) |
+| webdriver-manager | MIT License | [https://github.com/SergeyPirogov/webdriver_manager](https://github.com/SergeyPirogov/webdriver_manager) |
