@@ -1,7 +1,7 @@
 <img src="https://github.com/ussiemer/rosa-rain/blob/main/static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
 
 # Antifaschistische Wahlsteckbriefe
-Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als csv und erstellen daraus SVG's und PDF's auf Basis der Vorlage. Das frontend bietet die Möglichkeit in den Daten zu suchen mit GraphQL queries.
+Dieses Skript lädt die Wahlergebnisse der Brandenburger Landtagswahl 2024 aus CSV-Dateien, verarbeitet sie und generiert daraus SVGs und PDFs. Das Frontend ermöglicht die Suche in den Daten mithilfe von GraphQL-Abfragen.
 
 1. Download latest chromium
 
@@ -69,7 +69,7 @@ This logo image consists only of simple geometric shapes or text. It does not me
 | Package | License | Repository Link |
 | :--- | :--- | :--- |
 | aiofiles | MIT License | [https://github.com/Tinche/aiofiles](https://github.com/Tinche/aiofiles) |
-| beautifulsoup4 | MIT License | [https://github.com/scout-on-the-move/beautifulsoup4](https://github.com/scout-on-the-move/beautifulsoup4) |
+| beautifulsoup4 | MIT License | [https://www.crummy.com/software/BeautifulSoup/bs4/doc/](https://www.crummy.com/software/BeautifulSoup/bs4/doc/) |
 | CairoSVG | LGPL-3.0 License | [https://github.com/Kozea/CairoSVG](https://github.com/Kozea/CairoSVG) |
 | Flask | BSD 3-Clause "New" or "Revised" License | [https://github.com/pallets/flask](https://github.com/pallets/flask) |
 | graphene | MIT License | [https://github.com/graphql-python/graphene](https://github.com/graphql-python/graphene) |
