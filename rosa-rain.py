@@ -32,7 +32,7 @@ def csv_to_svg_table(csv_data, filename, svg_width=800):
     df.columns = ['Merkmal', 'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil']
 
     # Filter out rows that are not parties
-    df = df[~df['Merkmal'].isin(['Wahlberechtigte', 'Wählende', 'Ungültige Stimmen', 'Gültige Stimmen', 'Sonstige Direktbewerbende', 'Gewinn/Verlust in Prozent'])]
+    df = df[~df['Merkmal'].isin(['Sonstige Direktbewerbende', 'Gewinn/Verlust in Prozent'])]
 
     # Filter out rows where the 'Anzahl' column has a hyphen "-"
     df = df[df['Erststimmen_Anzahl'] != '-']
@@ -42,7 +42,7 @@ def csv_to_svg_table(csv_data, filename, svg_width=800):
     df.reset_index(drop=True, inplace=True)
 
     # SVG parameters
-    row_height = 25
+    row_height = 21
     col_widths = [150, 80, 80, 80, 80]
     table_width = sum(col_widths)
 
@@ -59,25 +59,11 @@ def csv_to_svg_table(csv_data, filename, svg_width=800):
     # Title
     svg_content += f'<text x="{x_offset + table_width/2}" y="{y_pos}" font-family="DejaVu Sans" font-size="16" text-anchor="middle" font-weight="bold">{title_raw}</text>\n'
 
-    y_pos += 10.5
-
-    # Draw horizontal header line
-    y_pos += 15
-
-    # Headers
-    header_names = ['Partei', 'Erststimmen', 'Anteil', 'Zweitstimmen', 'Anteil']
-    x_pos_cumulative_header = x_offset
-    for i, header_name in enumerate(header_names):
-        if i == 0:
-            svg_content += f'<text x="{x_pos_cumulative_header + 5}" y="{y_pos}" font-family="DejaVu Sans" font-size="{table_font_size}" font-weight="bold" text-anchor="start">{header_name}</text>\n'
-        else:
-            svg_content += f'<text x="{x_pos_cumulative_header + col_widths[i]/2}" y="{y_pos}" font-family="DejaVu Sans" font-size="{table_font_size}" font-weight="bold" text-anchor="middle">{header_name}</text>\n'
-        x_pos_cumulative_header += col_widths[i]
-
-    y_pos += 10
+    y_pos += 42
 
     # Draw table rows with conditional styling
-    for index, row in df.iterrows():
+    # Use .iloc[1:] to skip the first row (index 0)
+    for index, row in df.iloc[1:].iterrows():
         x_pos_cumulative = x_offset
 
         background_color = "#ffffff"
