@@ -1,7 +1,7 @@
 <img src="https://github.com/ussiemer/rosa-rain/blob/main/Antifaschistische_Aktion_logo.svg" style="float:left;padding:7px;" width="21%"/>
 
 # Antifaschistische Wahlsteckbriefe
-Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als csv und erstellen daraus SVG's und PDF's auf Basis der Vorlage.
+Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als csv und erstellen daraus SVG's und PDF's auf Basis der Vorlage. Das frontend bietet die Möglichkeit in den Daten zu suchen mit GraphQL queries.
 
 1. Download latest chromium
 
@@ -44,6 +44,11 @@ Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als cs
 ## Run rosa-rain.py
 ```
     python rosa-rain.py
+```
+
+## Run app.py
+```
+    python app.py
 ```
 
 ## License
