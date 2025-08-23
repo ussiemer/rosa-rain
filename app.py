@@ -13,6 +13,24 @@ df = None
 schema = None
 data_loaded_event = asyncio.Event()
 
+
+def clean_source_file_name(file_name: str) -> str:
+    """
+    Cleans up a source file name by removing the prefix, extension, and underscores,
+    and replacing them with spaces.
+    Example: '02_-_Prignitz_II___Ostprignitz-Ruppin_II.csv' -> 'Prignitz II   Ostprignitz-Ruppin II'
+    :param file_name: The source file name.
+    :return: The cleaned location name.
+    """
+    # Remove the number and ' - ' prefix using regex
+    name_without_prefix = re.sub(r'^\d+_-_', '', file_name)
+    # Remove the file extension
+    name_without_ext = os.path.splitext(name_without_prefix)[0]
+    # Replace ALL underscores with spaces
+    cleaned_name = name_without_ext.replace('_', ' ')
+    return cleaned_name.strip()
+
+
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
     print("Loading CSV files:", all_files)
@@ -24,6 +42,10 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
         'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Erststimmen_Gewinn',
         'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil', 'Zweitstimmen_Gewinn',
     ]
+
+    # Define which columns should be integers and which should be floats
+    int_cols = ['Erststimmen_Anzahl', 'Erststimmen_Gewinn', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Gewinn']
+    float_cols = ['Erststimmen_Anteil', 'Zweitstimmen_Anteil']
 
     for file in all_files:
         try:
@@ -40,17 +62,24 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
 
             # Use explicit conversion and filling to handle data types.
             for col in temp_df.columns:
-                if col == 'Merkmal' or col == 'sourceFile':
+                if col == 'Merkmal':
                     continue
 
                 # Replace common non-numeric values
                 temp_df[col] = temp_df[col].astype(str).str.strip().str.replace(',', '.', regex=False)
                 temp_df[col] = temp_df[col].str.replace('%', '', regex=False)
 
-                # Coerce to numeric, filling NaNs with 0
-                temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0)
+                # Coerce to numeric based on the defined type
+                if col in float_cols:
+                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float)
+                elif col in int_cols:
+                    # Fix: Safely convert to float first, then to int
+                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float).round().astype('Int64')
 
+            # Regex for unwated chars
             temp_df['sourceFile'] = os.path.basename(file)
+            temp_df['sourceFile'] = clean_source_file_name(temp_df['sourceFile'].iloc[0])
+
             df_list.append(temp_df)
 
         except Exception as e:
@@ -71,6 +100,7 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("DataFrame loaded with columns:", df.columns.tolist())
     return df
 
+
 def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
     if df.empty or not len(df.columns):
         print("DataFrame is empty, cannot create GraphQL type.")
@@ -80,7 +110,8 @@ def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
 
     attrs = {}
     for col in df.columns:
-        if col == 'Merkmal':
+        # Include the new 'locationName' field
+        if col in ['Merkmal', 'sourceFile', 'locationName']:
             attrs[col] = graphene.Field(graphene.String)
             continue
 
@@ -144,7 +175,7 @@ async def load_data_and_create_schema():
         print("Final DataFrame Columns:", df.columns.tolist())
         print("You can query with these exact field names:")
         for col in df.columns:
-            print(f"    {col}")
+            print(f"   {col}")
     finally:
         data_loaded_event.set()
 
