@@ -1,4 +1,4 @@
-<img src="https://github.com/ussiemer/rosa-rain/blob/main/static/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
+<img src="https://github.com/ussiemer/rosa-rain/blob/main/static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
 
 # Antifaschistische Wahlsteckbriefe
 Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als csv und erstellen daraus SVG's und PDF's auf Basis der Vorlage. Das frontend bietet die Möglichkeit in den Daten zu suchen mit GraphQL queries.
