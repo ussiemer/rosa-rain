@@ -6,53 +6,68 @@ from quart import Quart, request, jsonify, render_template, send_from_directory
 import graphene
 import asyncio
 import traceback
+import csv
+import numpy as np
 
 df = None
 schema = None
+data_loaded_event = asyncio.Event()
 
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
     print("Loading CSV files:", all_files)
     df_list = []
 
+    # Define a single, consistent header
+    standard_columns = [
+        'Merkmal',
+        'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Erststimmen_Gewinn',
+        'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil', 'Zweitstimmen_Gewinn',
+    ]
+
     for file in all_files:
         try:
-            temp_df = pd.read_csv(file, header=[0, 1], sep=';')
+            # Read the file, skipping the original headers
+            temp_df = pd.read_csv(file, sep=';', skiprows=4, header=None)
 
-            temp_df.columns = [
-                '_'.join([str(c) for c in col if c])
-                for col in temp_df.columns.values
-            ]
+            # Check if the number of columns matches the standard
+            if temp_df.shape[1] != len(standard_columns):
+                print(f"Warning: Column count mismatch in {file}. Skipping this file.")
+                continue
 
-            new_cols = []
+            # Assign the standard column names
+            temp_df.columns = standard_columns
+
+            # Use explicit conversion and filling to handle data types.
             for col in temp_df.columns:
-                col = re.sub(r'(Erststimmenmore|Zweitstimmenmore)', '', col)
-                col = re.sub(r'Gewinn.*', 'Gewinn', col)
-                col = re.sub(r'more', '', col)
-                col = re.sub(r'^(Erststimmen|Zweitstimmen)\1', r'\1', col)
-                col = re.sub(r'Unnamed: 0_level_1', 'Merkmal', col)
-                new_cols.append(col)
+                if col == 'Merkmal' or col == 'sourceFile':
+                    continue
 
-            temp_df.columns = new_cols
+                # Replace common non-numeric values
+                temp_df[col] = temp_df[col].astype(str).str.strip().str.replace(',', '.', regex=False)
+                temp_df[col] = temp_df[col].str.replace('%', '', regex=False)
 
-            temp_df.columns = [
-                col.replace(' ', '_').replace('__', '_').replace('-', '').replace('%', '')
-                for col in temp_df.columns
-            ]
-
-            temp_df.rename(columns={'Merkmal_Merkmal': 'Merkmal'}, inplace=True)
+                # Coerce to numeric, filling NaNs with 0
+                temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0)
 
             temp_df['sourceFile'] = os.path.basename(file)
-
             df_list.append(temp_df)
+
         except Exception as e:
             print(f"Error reading and processing file {file}: {e}")
             traceback.print_exc()
+            continue
 
     if not df_list:
         return pd.DataFrame()
 
     df = pd.concat(df_list, ignore_index=True)
+
+    # Final check and fill for any remaining NaNs
+    for col in df.columns:
+        if pd.api.types.is_numeric_dtype(df[col]):
+            df[col] = df[col].fillna(0)
+
     print("DataFrame loaded with columns:", df.columns.tolist())
     return df
 
@@ -119,16 +134,23 @@ def create_schema_from_df(df: pd.DataFrame):
 
 app = Quart(__name__)
 
-@app.before_serving
-async def startup():
+async def load_data_and_create_schema():
     global df, schema
-    df = await asyncio.to_thread(load_all_csvs, 'results')
-    create_schema_from_df(df)
-    print("GraphQL schema created successfully!")
-    print("Final DataFrame Columns:", df.columns.tolist())
-    print("You can query with these exact field names:")
-    for col in df.columns:
-        print(f"    {col}")
+    print("Starting data loading in background...")
+    try:
+        df = await asyncio.to_thread(load_all_csvs, 'results')
+        create_schema_from_df(df)
+        print("GraphQL schema created successfully!")
+        print("Final DataFrame Columns:", df.columns.tolist())
+        print("You can query with these exact field names:")
+        for col in df.columns:
+            print(f"    {col}")
+    finally:
+        data_loaded_event.set()
+
+@app.before_serving
+async def start_background_task():
+    app.add_background_task(load_data_and_create_schema)
 
 @app.route("/")
 async def index():
@@ -136,6 +158,9 @@ async def index():
 
 @app.route("/graphql", methods=["POST"])
 async def graphql_endpoint():
+    # Wait for the data to be loaded before processing the query
+    await data_loaded_event.wait()
+
     if schema is None:
         return jsonify({"errors": [{"message": "API not initialized."}]}), 500
     try:

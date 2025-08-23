@@ -10,12 +10,12 @@ async function searchData() {
             Merkmal: $keyword
         ) {
             Merkmal
-            Erststimmen_Anzahl
-            Erststimmen_Anteil
-            Erststimmen_Gewinn
-            Zweitstimmen_Anzahl
-            Zweitstimmen_Anteil
-            Zweitstimmen_Gewinn
+            ErststimmenAnzahl
+            ErststimmenAnteil
+            ErststimmenGewinn
+            ZweitstimmenAnzahl
+            ZweitstimmenAnteil
+            ZweitstimmenGewinn
             sourceFile
         }
     }
@@ -42,12 +42,12 @@ async function searchData() {
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
             // Client-side filtering to remove entries with votes equal to or less than 0
             let filteredData = data.data.allData.filter(item =>
-            (item.Erststimmen_Anzahl > 0) &&
-            (item.Zweitstimmen_Anzahl > 0)
+            (item.ErststimmenAnzahl > 0) ||
+            (item.ZweitstimmenAnzahl > 0)
             );
 
-            // Sort the filtered data by Zweitstimmen_Anzahl in descending order
-            filteredData.sort((a, b) => b.Zweitstimmen_Anzahl - a.Zweitstimmen_Anzahl);
+            // Sort the filtered data by ZweitstimmenAnzahl in descending order
+            filteredData.sort((a, b) => b.ZweitstimmenAnzahl - a.ZweitstimmenAnzahl);
 
             if (filteredData.length === 0) {
                 resultsPre.textContent = "No results found with more than 0 votes.";
