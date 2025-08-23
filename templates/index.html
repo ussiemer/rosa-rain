@@ -7,7 +7,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Search Your Data</h1>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/Antifalogo_alt2.svg') }}" width="21%"/>
+        </div>
         <p class="hint">Enter a keyword (e.g., 'III. Weg', 'AfD') to filter results by the 'Merkmal' column.</p>
         <div class="search-container">
             <input type="text" id="searchInput" class="search-input" placeholder="Enter search keyword...">
@@ -15,7 +17,7 @@
         </div>
         <h2>Results:</h2>
         <pre id="resultsPre">
-            <span style="color: #888;">Your search results will appear here.</span>
+            <span style="color: #88;">Your search results will appear here.</span>
         </pre>
     </div>
 
