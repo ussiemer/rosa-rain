@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 2rem;
     background-color: black;
-    color: #333;
+    color: white;
     line-height: 1.6;
 }
 
@@ -13,7 +13,6 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
-    background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -47,9 +46,11 @@ h1 {
     flex-grow: 1;
     padding: 12px;
     font-size: 16px;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 5px;
+    background-color: red;
     transition: border-color 0.2s, box-shadow 0.2s;
+    color: white;
 }
 
 .search-input:focus {
@@ -78,11 +79,12 @@ h2 {
 }
 
 pre {
-    background-color: #f4f4f4;
+    background-color: #000000;
     padding: 1.5rem;
     border-radius: 5px;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-x: auto;
     max-height: 210px;
+    color: #ffffff;
 }
