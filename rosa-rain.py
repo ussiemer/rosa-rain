@@ -48,7 +48,7 @@ def csv_to_svg_table(csv_data, svg_width=800):
     y_offset = 497
 
     # New table font size
-    table_font_size = 14 + 0.21 + 1.42
+    table_font_size = 10.5
 
     svg_content = ''
     y_pos = y_offset + 30

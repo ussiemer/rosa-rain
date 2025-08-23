@@ -22,7 +22,7 @@ def sanitize_filename(name):
 def process_url_and_get_title(driver, full_url, download_dir):
     """
     Navigiert zu einer bestimmten URL, extrahiert die Tabellendaten und speichert sie.
-    Verwendet den Seitentitel als Namen.
+    Verwendet den Seitentitel als Namen und benennt die Spalten um.
     """
     try:
         print(f"\nVerarbeite URL: {full_url}")
@@ -39,7 +39,8 @@ def process_url_and_get_title(driver, full_url, download_dir):
 
         print(f"Name der Seite: '{name}'")
 
-        WebDriverWait(driver, 10).until(
+        # Verkürzen Sie den Timeout, um die Wartezeit zu verringern
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "table.tablesaw.table-stimmen[data-tablejigsaw-downloadable]"))
         )
 
@@ -47,18 +48,39 @@ def process_url_and_get_title(driver, full_url, download_dir):
         table_element = driver.find_element(By.CSS_SELECTOR, table_selector)
 
         table_html = table_element.get_attribute('outerHTML')
-        df_list = pd.read_html(StringIO(table_html), header=None)
+
+        df_list = pd.read_html(StringIO(table_html), header=[0, 1])
 
         if df_list:
             df = df_list[0]
+
+            new_columns = []
+            for col_tuple in df.columns:
+                if 'Unnamed' in col_tuple[0] and col_tuple[1] == 'Unnamed: 0_level_1':
+                    new_name = 'Merkmal'
+                else:
+                    new_name = f"{col_tuple[0]}_{col_tuple[1]}"
+
+                new_columns.append(new_name)
+
+            df.columns = new_columns
+
+            # Regex-Bereinigung, um doppelte Namen, "more" und unnötige Symbole zu entfernen
+            df.columns = [re.sub(r'(Erststimmenmore|Zweitstimmenmore)', '', col) for col in df.columns]
+            df.columns = [re.sub(r'Gewinn.*', 'Gewinn', col) for col in df.columns]
+            df.columns = [re.sub(r'more', '', col) for col in df.columns]
+
+            # Entfernt die Duplikate (z.B. "ErststimmenErststimmen")
+            df.columns = [re.sub(r'^(Erststimmen|Zweitstimmen)\1', r'\1', col) for col in df.columns]
+
+            # Letzte Bereinigung für saubere CSV-Header
+            df.columns = [col.replace(' ', '_').replace('__', '_').replace('-', '').replace('%', '') for col in df.columns]
+
             filename = f"{sanitize_filename(name)}.csv"
             file_path = os.path.join(download_dir, filename)
 
-            header_df = pd.DataFrame([[''] * len(df.columns)], columns=df.columns)
-            header_df.iloc[0, 0] = name
-
-            final_df = pd.concat([header_df, df], ignore_index=True)
-            final_df.to_csv(file_path, index=False)
+            final_df = df
+            final_df.to_csv(file_path, index=False, sep=';', encoding='utf-8')
             print(f"✅ Daten erfolgreich gespeichert in: {file_path}")
         else:
             print(f"⚠️ Keine Tabelle gefunden mit pandas für '{name}'.")
@@ -66,7 +88,9 @@ def process_url_and_get_title(driver, full_url, download_dir):
         return driver.current_url
     except Exception as e:
         print(f"❌ Ein Fehler ist aufgetreten beim Verarbeiten von '{full_url}': {e}")
-        time.sleep(2) # Warte, bevor der nächste Link versucht wird
+        traceback.print_exc()
+        # Verkürzen Sie den Sleep-Timer, um schneller fortzufahren
+        time.sleep(1)
         return None
 
 def recursive_get_election_data():
@@ -107,13 +131,11 @@ def recursive_get_election_data():
 
             processed_urls.add(full_url)
 
-            # Navigiere und verarbeite die aktuelle URL, um die Datei zu speichern
             process_url_and_get_title(driver, full_url, download_dir)
 
-            # Finden und fügen Sie verschachtelte "Untergeordnete" Links dem Stack hinzu
             try:
-                # Warten, bis der Container für die verschachtelten Links vorhanden ist
-                WebDriverWait(driver, 10).until(
+                # Verkürzen Sie den Timeout, um die Wartezeit zu verringern
+                WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.XPATH, "//h5[contains(text(), 'Untergeordnet')]/following-sibling::ul[contains(@class, 'linklist')]"))
                 )
 
@@ -124,7 +146,6 @@ def recursive_get_election_data():
                     print(f"Habe {len(sub_links)} verschachtelte Links gefunden. Füge sie dem Stack hinzu.")
                     for link in sub_links:
                         new_link_href = link.get_attribute('href')
-                        # Neuen Link nur dann dem Stack hinzufügen, wenn er noch nicht verarbeitet wurde
                         if new_link_href not in processed_urls:
                             url_stack.append(new_link_href)
             except Exception:
