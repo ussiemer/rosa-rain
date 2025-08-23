@@ -9,35 +9,20 @@ Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als cs
 
 ```
     aiofiles: For asynchronous file operations.
-
     beautifulsoup4: For web scraping and parsing HTML.
-
     CairoSVG: For converting SVG files to other formats like PNG or PDF.
-
     Flask: A popular web framework for building web applications.
-
     graphene: A library for building GraphQL APIs.
-
     Hypercorn: An ASGI server to run your async web application.
-
     lxml: A fast XML and HTML parsing library, often a dependency of beautifulsoup4.
-
     numpy: A fundamental package for scientific computing with Python.
-
     pandas: Used for data manipulation and analysis.
-
     pillow: For image processing.
-
     python-dotenv: To manage environment variables.
-
     Quart: An asyncio-based web framework, often used with Hypercorn.
-
     requests: For making HTTP requests.
-
     selenium: For web automation and testing.
-
     trio: An asynchronous I/O library.
-
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
     
@@ -60,8 +45,6 @@ Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als cs
 ```
     python rosa-rain.py
 ```
-
-
 
 ## License
 https://de.wikipedia.org/wiki/Antifa#/media/Datei:Antifaschistische_Aktion_logo.svg
