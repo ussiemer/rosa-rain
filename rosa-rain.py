@@ -4,7 +4,7 @@ import re
 import os
 import cairosvg
 
-def csv_to_svg_table(csv_data, svg_width=800):
+def csv_to_svg_table(csv_data, filename, svg_width=800):
     """
     Erstellt eine SVG-Tabelle, die nur die Zweitstimmen anzeigt,
     ohne die G/V-Spalte und ohne die Spaltenüberschriften.
@@ -12,21 +12,8 @@ def csv_to_svg_table(csv_data, svg_width=800):
     """
     csv_file = io.StringIO(csv_data)
 
-    # Read and discard the first two lines
-    csv_file.readline()
-    csv_file.readline()
-
-    # Read the third line to get the title, which is now the table title.
-    title_raw = csv_file.readline().strip()
-
-    # Use regex to get the text before the commas and remove the "Amtliches Endergebnis" part
-    match = re.search(r'^(.*?),+', title_raw)
-    if match:
-        title_raw = match.group(1).strip()
-
-    # Check if the title is empty and fall back to a placeholder
-    if not title_raw:
-        title_raw = "Wahlergebnis"
+    # Use the filename as the title and clean it up
+    title_raw = filename.replace('_', ' ').replace('.csv', '')
 
     # Read the rest of the data, specifying the semicolon separator
     try:
@@ -38,17 +25,17 @@ def csv_to_svg_table(csv_data, svg_width=800):
     if df.shape[1] < 6:
         raise ValueError(f"The CSV file does not have the expected number of columns. Found {df.shape[1]} columns.")
 
-    # Select Merkmal and Zweitstimmen columns (indices 0, 4, 5)
-    df = df.iloc[:, [0, 4, 5]].copy()
+    # Select all three columns (Merkmal, Erststimmen, and Zweitstimmen)
+    df = df.iloc[:, [0, 1, 2, 4, 5]].copy()
 
-    # Set the column headers
-    df.columns = ['Merkmal', 'Anzahl', 'Anteil']
+    # Set the new column headers
+    df.columns = ['Merkmal', 'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil']
 
     # Filter out rows that are not parties
     df = df[~df['Merkmal'].isin(['Wahlberechtigte', 'Wählende', 'Ungültige Stimmen', 'Gültige Stimmen', 'Sonstige Direktbewerbende', 'Gewinn/Verlust in Prozent'])]
 
     # Filter out rows where the 'Anzahl' column has a hyphen "-"
-    df = df[df['Anzahl'] != '-']
+    df = df[df['Erststimmen_Anzahl'] != '-']
     df = df.dropna(subset=['Merkmal'])
 
     # Reset index after filtering to prevent issues with row-based operations later
@@ -56,7 +43,7 @@ def csv_to_svg_table(csv_data, svg_width=800):
 
     # SVG parameters
     row_height = 25
-    col_widths = [200, 100, 150]
+    col_widths = [150, 80, 80, 80, 80]
     table_width = sum(col_widths)
 
     # Calculate x_offset to center the table
@@ -76,6 +63,18 @@ def csv_to_svg_table(csv_data, svg_width=800):
 
     # Draw horizontal header line
     y_pos += 15
+
+    # Headers
+    header_names = ['Partei', 'Erststimmen', 'Anteil', 'Zweitstimmen', 'Anteil']
+    x_pos_cumulative_header = x_offset
+    for i, header_name in enumerate(header_names):
+        if i == 0:
+            svg_content += f'<text x="{x_pos_cumulative_header + 5}" y="{y_pos}" font-family="DejaVu Sans" font-size="{table_font_size}" font-weight="bold" text-anchor="start">{header_name}</text>\n'
+        else:
+            svg_content += f'<text x="{x_pos_cumulative_header + col_widths[i]/2}" y="{y_pos}" font-family="DejaVu Sans" font-size="{table_font_size}" font-weight="bold" text-anchor="middle">{header_name}</text>\n'
+        x_pos_cumulative_header += col_widths[i]
+
+    y_pos += 10
 
     # Draw table rows with conditional styling
     for index, row in df.iterrows():
@@ -138,7 +137,8 @@ else:
                     with open(csv_file_path, 'r', encoding='utf-8') as f:
                         csv_string = f.read()
 
-                    svg_table = csv_to_svg_table(csv_string)
+                    # Pass the filename to the function
+                    svg_table = csv_to_svg_table(csv_string, filename)
                     start_group = match.group(1)
                     end_group = match.group(2)
                     new_group_content = f'{start_group}\n{svg_table}\n{end_group}'

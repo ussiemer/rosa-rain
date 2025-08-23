@@ -5,7 +5,7 @@ import re
 from quart import Quart, request, jsonify, render_template, send_from_directory
 import graphene
 import asyncio
-
+import traceback
 
 df = None
 schema = None
@@ -15,31 +15,39 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("Loading CSV files:", all_files)
     df_list = []
 
-    # Function to convert a string to camelCase
-    def to_camel_case(s):
-        parts = s.split('_')
-        return parts[0] + ''.join(word.capitalize() for word in parts[1:])
-
     for file in all_files:
         try:
-            # Load with two-row header
-            temp_df = pd.read_csv(file, header=[0, 1])
+            temp_df = pd.read_csv(file, header=[0, 1], sep=';')
 
-            # Combine header levels into a single string
             temp_df.columns = [
-                '_'.join([str(c).replace(' ', '').replace('%', 'Prozent').replace('-', '').replace('/', '') for c in col if c])
+                '_'.join([str(c) for c in col if c])
                 for col in temp_df.columns.values
             ]
 
-            # Sanitize and convert to camelCase
-            temp_df.columns = [to_camel_case(re.sub(r'[^_a-zA-Z0-9]', '_', col)) for col in temp_df.columns]
+            new_cols = []
+            for col in temp_df.columns:
+                col = re.sub(r'(Erststimmenmore|Zweitstimmenmore)', '', col)
+                col = re.sub(r'Gewinn.*', 'Gewinn', col)
+                col = re.sub(r'more', '', col)
+                col = re.sub(r'^(Erststimmen|Zweitstimmen)\1', r'\1', col)
+                col = re.sub(r'Unnamed: 0_level_1', 'Merkmal', col)
+                new_cols.append(col)
 
-            # Add the source file column and convert it to camelCase as well
+            temp_df.columns = new_cols
+
+            temp_df.columns = [
+                col.replace(' ', '_').replace('__', '_').replace('-', '').replace('%', '')
+                for col in temp_df.columns
+            ]
+
+            temp_df.rename(columns={'Merkmal_Merkmal': 'Merkmal'}, inplace=True)
+
             temp_df['sourceFile'] = os.path.basename(file)
 
             df_list.append(temp_df)
         except Exception as e:
             print(f"Error reading and processing file {file}: {e}")
+            traceback.print_exc()
 
     if not df_list:
         return pd.DataFrame()
@@ -49,31 +57,26 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     return df
 
 def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
-    # A defensive check to ensure columns exist
     if df.empty or not len(df.columns):
         print("DataFrame is empty, cannot create GraphQL type.")
         class CsvType(graphene.ObjectType):
             placeholder = graphene.String()
         return CsvType
 
-    # Dynamically create a GraphQL type
     attrs = {}
     for col in df.columns:
-        # Special case for the primary key/label column
-        if col == 'Merkmal_Unnamed_0_level_1':
+        if col == 'Merkmal':
             attrs[col] = graphene.Field(graphene.String)
             continue
 
         col_type = graphene.String
 
-        # Check for numeric types
         try:
             if pd.api.types.is_float_dtype(df[col]):
                 col_type = graphene.Float
             elif pd.api.types.is_integer_dtype(df[col]):
                 col_type = graphene.Int
         except TypeError:
-            # Fallback to string if type check fails
             pass
 
         attrs[col] = graphene.Field(col_type)
@@ -108,7 +111,6 @@ def create_schema_from_df(df: pd.DataFrame):
 
             records = results.to_dict('records')
 
-            # Ensure the result is always a list, even for a single record.
             if isinstance(records, dict):
                 return [records]
 
@@ -141,7 +143,6 @@ async def graphql_endpoint():
         query = data.get("query")
         variables = data.get("variables")
 
-        # Use schema.execute_async for asynchronous resolvers
         result = await schema.execute_async(query, variable_values=variables)
 
         response = {}
