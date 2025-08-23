@@ -1,0 +1,15 @@
+aiofiles
+beautifulsoup4
+CairoSVG
+graphene
+Hypercorn
+lxml
+numpy
+pandas
+pillow
+python-dotenv
+quart
+requests
+selenium
+trio
+webdriver-manager
