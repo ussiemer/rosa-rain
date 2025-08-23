@@ -1,4 +1,4 @@
-<img src="https://github.com/ussiemer/rosa-rain/blob/main/Antifaschistische_Aktion_logo.svg" style="float:left;padding:7px;" width="21%"/>
+<img src="https://github.com/ussiemer/rosa-rain/blob/main/static/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
 
 # Antifaschistische Wahlsteckbriefe
 Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als csv und erstellen daraus SVG's und PDF's auf Basis der Vorlage. Das frontend bietet die Möglichkeit in den Daten zu suchen mit GraphQL queries.
@@ -52,15 +52,16 @@ Diese Scripte laden alle Wahlergebnisse der Landtagswahl Brandenburg 2024 als cs
 ```
 
 ## License
-https://de.wikipedia.org/wiki/Antifa#/media/Datei:Antifaschistische_Aktion_logo.svg
-Logo mit roter und schwarzer Fahne
+https://en.wikipedia.org/wiki/Antifa_(Germany)#/media/File:Antifalogo_alt2.svg
+1930s logo of Antifaschistische Aktion
 
-DerB23 - Diese Datei enthält Elemente, die von folgender Datei entnommen oder adaptiert wurden:
+Max Gebhard (Grafiker), Max Keilson - Own work using: This photograph, own work
 
-Logo der Antifa mit roter Flagge im Vordergrund und weißer Umrandung. Verbesserte Version der Datei Antifasistische Aktion logo.svg, welche eine Vektorisierung einer Rastergrafik war und einen Tippfehler im Dateinamen hatte. Die Schriftart im Logo ist Futura mit einer Schriftstärke von 650.
+Logo der Antifaschistischen Aktion
+Permission details
+This logo image consists only of simple geometric shapes or text. It does not meet the threshold of originality needed for copyright protection, and is therefore in the public domain. Although it is free of copyright restrictions, this image may still be subject to other restrictions. See WP:PD § Fonts and typefaces or Template talk:PD-textlogo for more information.
 
-    CC0
-    Datei:Antifaschistische Aktion logo.svg
-    Erstellt: 25. April 2025
-    Hochgeladen: 26. April 2025
-
+    Public Domainhide terms
+    File:Antifalogo alt2.svg
+    Created: 1932
+    Uploaded: 14 April 2013

@@ -7,15 +7,15 @@ async function searchData() {
     const query = `
     query GetData($keyword: String) {
         allData(
-            MerkmalUnnamed0Level1: $keyword
+            Merkmal: $keyword
         ) {
-            MerkmalUnnamed0Level1
-            ErststimmenmoreErststimmenAnzahl
-            ErststimmenmoreErststimmenAnteil
-            ErststimmenmoreErststimmenGewinnundverlustinprozentpunkten
-            ZweitstimmenmoreZweitstimmenAnzahl
-            ZweitstimmenmoreZweitstimmenAnteil
-            ZweitstimmenmoreZweitstimmenGewinnundverlustinprozentpunkten
+            Merkmal
+            Erststimmen_Anzahl
+            Erststimmen_Anteil
+            Erststimmen_Gewinn
+            Zweitstimmen_Anzahl
+            Zweitstimmen_Anteil
+            Zweitstimmen_Gewinn
             sourceFile
         }
     }
@@ -42,12 +42,12 @@ async function searchData() {
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
             // Client-side filtering to remove entries with votes equal to or less than 0
             let filteredData = data.data.allData.filter(item =>
-            (item.ErststimmenmoreErststimmenAnzahl > 0) &&
-            (item.ZweitstimmenmoreZweitstimmenAnzahl > 0)
+            (item.Erststimmen_Anzahl > 0) &&
+            (item.Zweitstimmen_Anzahl > 0)
             );
 
-            // Sort the filtered data by ZweitstimmenmoreZweitstimmenAnzahl in descending order
-            filteredData.sort((a, b) => b.ZweitstimmenmoreZweitstimmenAnzahl - a.ZweitstimmenmoreZweitstimmenAnzahl);
+            // Sort the filtered data by Zweitstimmen_Anzahl in descending order
+            filteredData.sort((a, b) => b.Zweitstimmen_Anzahl - a.Zweitstimmen_Anzahl);
 
             if (filteredData.length === 0) {
                 resultsPre.textContent = "No results found with more than 0 votes.";
