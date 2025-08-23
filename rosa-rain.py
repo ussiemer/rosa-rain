@@ -24,9 +24,19 @@ def csv_to_svg_table(csv_data, svg_width=800):
     if match:
         title_raw = match.group(1).strip()
 
-    # Read the rest of the data. Since we have already read the first three lines,
-    # the actual data starts on the fourth line.
-    df = pd.read_csv(csv_file, header=None)
+    # Check if the title is empty and fall back to a placeholder
+    if not title_raw:
+        title_raw = "Wahlergebnis"
+
+    # Read the rest of the data, specifying the semicolon separator
+    try:
+        df = pd.read_csv(csv_file, header=None, sep=';')
+    except pd.errors.ParserError:
+        raise ValueError("The CSV file could not be parsed with a semicolon delimiter.")
+
+    # Check if the DataFrame has at least 6 columns (indices 0 to 5)
+    if df.shape[1] < 6:
+        raise ValueError(f"The CSV file does not have the expected number of columns. Found {df.shape[1]} columns.")
 
     # Select Merkmal and Zweitstimmen columns (indices 0, 4, 5)
     df = df.iloc[:, [0, 4, 5]].copy()
@@ -34,9 +44,15 @@ def csv_to_svg_table(csv_data, svg_width=800):
     # Set the column headers
     df.columns = ['Merkmal', 'Anzahl', 'Anteil']
 
-    # --- NEW FILTERING LOGIC ---
+    # Filter out rows that are not parties
+    df = df[~df['Merkmal'].isin(['Wahlberechtigte', 'Wählende', 'Ungültige Stimmen', 'Gültige Stimmen', 'Sonstige Direktbewerbende', 'Gewinn/Verlust in Prozent'])]
+
     # Filter out rows where the 'Anzahl' column has a hyphen "-"
     df = df[df['Anzahl'] != '-']
+    df = df.dropna(subset=['Merkmal'])
+
+    # Reset index after filtering to prevent issues with row-based operations later
+    df.reset_index(drop=True, inplace=True)
 
     # SVG parameters
     row_height = 25
