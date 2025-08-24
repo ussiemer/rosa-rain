@@ -88,3 +88,43 @@ pre {
     max-height: 210px;
     color: #ffffff;
 }
+
+/* Container for the grid layout */
+.grid-container {
+    display: grid;
+    grid-template-columns: 28% 70%;
+    gap: 3.5rem;
+    justify-content: center;
+}
+
+#resultsPre{
+    width: 100%;
+    max-height: 28vh;
+}
+
+#osm {
+width: 100%;
+}
+
+.wk {
+    fill: #f8f8f8;
+    stroke-width: 0.48px;
+    stroke: #1d1d1b;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Remove the fixed fill from here */
+.wk:hover, .wk-active {
+    fill: red;
+    opacity: 0.7; /* A default opacity for demonstration */
+    cursor: pointer;
+}
+
+/* New, dynamic class for highlighting */
+.district-highlight {
+    fill: red;
+    stroke: #333;
+    stroke-width: 1.5px;
+    /* The opacity will be set directly in JavaScript */
+}

@@ -13,75 +13,62 @@ df = None
 schema = None
 data_loaded_event = asyncio.Event()
 
-
 def clean_source_file_name(file_name: str) -> str:
     """
     Cleans up a source file name by removing the prefix, extension, and underscores,
     and replacing them with spaces.
-    Example: '02_-_Prignitz_II___Ostprignitz-Ruppin_II.csv' -> 'Prignitz II   Ostprignitz-Ruppin II'
-    :param file_name: The source file name.
-    :return: The cleaned location name.
     """
-    # Remove the number and ' - ' prefix using regex
     name_without_prefix = re.sub(r'^\d+_-_', '', file_name)
-    # Remove the file extension
     name_without_ext = os.path.splitext(name_without_prefix)[0]
-    # Replace ALL underscores with spaces
     cleaned_name = name_without_ext.replace('_', ' ')
     return cleaned_name.strip()
 
-
+# This function is updated to remove the 'specificDistrictName' column
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
     print("Loading CSV files:", all_files)
     df_list = []
 
-    # Define a single, consistent header
     standard_columns = [
         'Merkmal',
         'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Erststimmen_Gewinn',
         'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil', 'Zweitstimmen_Gewinn',
     ]
 
-    # Define which columns should be integers and which should be floats
     int_cols = ['Erststimmen_Anzahl', 'Erststimmen_Gewinn', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Gewinn']
     float_cols = ['Erststimmen_Anteil', 'Zweitstimmen_Anteil']
 
     for file in all_files:
         try:
-            # Read the file, skipping the original headers
             temp_df = pd.read_csv(file, sep=';', skiprows=4, header=None)
 
-            # Check if the number of columns matches the standard
             if temp_df.shape[1] != len(standard_columns):
                 print(f"Warning: Column count mismatch in {file}. Skipping this file.")
                 continue
 
-            # Assign the standard column names
             temp_df.columns = standard_columns
 
-            # Use explicit conversion and filling to handle data types.
             for col in temp_df.columns:
                 if col == 'Merkmal':
                     continue
-
-                # Replace common non-numeric values
                 temp_df[col] = temp_df[col].astype(str).str.strip().str.replace(',', '.', regex=False)
                 temp_df[col] = temp_df[col].str.replace('%', '', regex=False)
-
-                # Coerce to numeric based on the defined type
                 if col in float_cols:
                     temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float)
                 elif col in int_cols:
-                    # Fix: Safely convert to float first, then to int
                     temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float).round().astype('Int64')
 
-            # Regex for unwated chars
-            temp_df['sourceFile'] = os.path.basename(file)
-            temp_df['sourceFile'] = clean_source_file_name(temp_df['sourceFile'].iloc[0])
+            base_name = os.path.basename(file)
+
+            electoral_id = re.search(r'^(\d+)', base_name)
+            temp_df['districtId'] = f"wk{electoral_id.group(1)}" if electoral_id else None
+
+            # Removed the 'specificDistrictName' column
+
+            temp_df['locationName'] = clean_source_file_name(base_name)
+            temp_df['sourceFile'] = base_name
 
             df_list.append(temp_df)
-
         except Exception as e:
             print(f"Error reading and processing file {file}: {e}")
             traceback.print_exc()
@@ -92,7 +79,6 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
 
     df = pd.concat(df_list, ignore_index=True)
 
-    # Final check and fill for any remaining NaNs
     for col in df.columns:
         if pd.api.types.is_numeric_dtype(df[col]):
             df[col] = df[col].fillna(0)
@@ -100,7 +86,7 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("DataFrame loaded with columns:", df.columns.tolist())
     return df
 
-
+# This function is updated to remove the 'specificDistrictName' field
 def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
     if df.empty or not len(df.columns):
         print("DataFrame is empty, cannot create GraphQL type.")
@@ -110,8 +96,7 @@ def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
 
     attrs = {}
     for col in df.columns:
-        # Include the new 'locationName' field
-        if col in ['Merkmal', 'sourceFile', 'locationName']:
+        if col in ['Merkmal', 'sourceFile', 'locationName', 'districtId']:
             attrs[col] = graphene.Field(graphene.String)
             continue
 
@@ -189,7 +174,6 @@ async def index():
 
 @app.route("/graphql", methods=["POST"])
 async def graphql_endpoint():
-    # Wait for the data to be loaded before processing the query
     await data_loaded_event.wait()
 
     if schema is None:
@@ -216,4 +200,4 @@ async def static_files(filename):
     return await send_from_directory('static', filename)
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True, port=5000)
