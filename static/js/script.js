@@ -1,8 +1,9 @@
+// In static/js/script.js
+
 async function searchData() {
     const keyword = document.getElementById('searchInput').value;
-    const resultsPre = document.getElementById('resultsPre');
+    const resultsContainer = document.getElementById('resultsPre');
 
-    // Updated GraphQL query to remove 'isInherentDistrict'
     const query = `
     query GetData($keyword: String) {
         allData(
@@ -23,7 +24,7 @@ async function searchData() {
 
     const variables = { keyword };
 
-    resultsPre.innerHTML = '<span style="color: #007BFF;">Loading...</span>';
+    resultsContainer.innerHTML = '<span style="color: #007BFF;">Loading...</span>';
 
     try {
         const response = await fetch('/graphql', {
@@ -33,42 +34,47 @@ async function searchData() {
         });
 
         const data = await response.json();
-
         console.log('GraphQL response:', data);
 
-        document.querySelectorAll('polygon.district-highlight').forEach(el => {
-            el.classList.remove('district-highlight');
-        });
-        document.querySelectorAll('path.district-highlight').forEach(el => {
-            el.classList.remove('district-highlight');
-        });
-
         if (data.errors && data.errors.length) {
-            resultsPre.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
+            resultsContainer.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
             let filteredData = data.data.allData.filter(item =>
-            (item.ErststimmenAnzahl > 0) ||
-            (item.ZweitstimmenAnzahl > 0)
+            (item.ErststimmenAnzahl > 0) || (item.ZweitstimmenAnzahl > 0)
             );
 
             filteredData.sort((a, b) => b.ZweitstimmenAnzahl - a.ZweitstimmenAnzahl);
 
             if (filteredData.length === 0) {
-                resultsPre.textContent = "No results found with more than 0 votes.";
+                resultsContainer.textContent = "No results found with more than 0 votes.";
             } else {
-                resultsPre.textContent = filteredData.map(
-                    item => Object.entries(item).map(([k, v]) => `${k}: ${v}`).join('\n')
-                ).join('\n\n---\n\n');
+                // Clear previous results
+                resultsContainer.innerHTML = '';
+
+                filteredData.forEach(item => {
+                    const resultDiv = document.createElement('div');
+                    resultDiv.classList.add('result-item');
+                    resultDiv.setAttribute('data-district-id', item.districtId);
+                    resultDiv.onmouseover = () => { window.highlightDistrict(item.districtId); };
+                    resultDiv.onmouseout = () => { window.resetHighlight(); };
+
+                    const content = Object.entries(item)
+                    .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
+                    .join('<br>');
+
+                    resultDiv.innerHTML = content;
+                    resultsContainer.appendChild(resultDiv);
+                });
             }
         } else if (data.data && data.data.allData === null) {
-            resultsPre.textContent = "No results found (null).";
+            resultsContainer.textContent = "No results found (null).";
         } else if (data.data) {
-            resultsPre.textContent = JSON.stringify(data.data, null, 2);
+            resultsContainer.textContent = JSON.stringify(data.data, null, 2);
         } else {
-            resultsPre.textContent = "No data found.";
+            resultsContainer.textContent = "No data found.";
         }
     } catch (error) {
-        resultsPre.textContent = `Error: ${error.message}`;
+        resultsContainer.textContent = `Error: ${error.message}`;
         console.error('Error running GraphQL query:', error);
     }
 }
