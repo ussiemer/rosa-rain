@@ -85,7 +85,7 @@ This logo image consists only of simple geometric shapes or text. It does not me
 | trio | MIT License | [https://github.com/python-trio/trio](https://github.com/python-trio/trio) |
 | webdriver-manager | MIT License | [https://github.com/SergeyPirogov/webdriver_manager](https://github.com/SergeyPirogov/webdriver_manager) |
 
-### Libs licenses:
+### Lib licenses:
 leaflet 1.9.4 - https://github.com/Leaflet/Leaflet
 BSD 2-Clause License
 Copyright (c) 2010-2025, Volodymyr Agafonkin
