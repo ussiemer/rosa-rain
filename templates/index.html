@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>GraphQL Data Search</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/leaflet.css') }}"
             crossorigin=""/>
 </head>
 <body>
@@ -25,7 +25,7 @@
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    <script src="{{ url_for('static', filename='lib/leaflet.js') }}"
             crossorigin=""></script>
     <script>
         // Force the map to use the Canvas renderer to fix potential drawing bugs

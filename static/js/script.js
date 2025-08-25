@@ -1,9 +1,8 @@
-// In static/js/script.js
-
 async function searchData() {
     const keyword = document.getElementById('searchInput').value;
     const resultsContainer = document.getElementById('resultsPre');
 
+    // GraphQL query
     const query = `
     query GetData($keyword: String) {
         allData(

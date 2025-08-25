@@ -5,7 +5,12 @@ Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
 
 1. Download latest chromium
 
-2. 'pip install -r requirements.txt'
+2. Venv
+```
+    python3 -m venv venv
+```
+
+3. 2. 'pip install -r requirements.txt'
 
 ```
     aiofiles: For asynchronous file operations.
@@ -24,11 +29,6 @@ Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     selenium: For web automation and testing.
     trio: An asynchronous I/O library.
     webdriver-manager: To automatically manage web browser drivers for Selenium.
-```
-    
-## Venv
-```
-    python3 -m venv venv
 ```
 
 ## Chrome driver
@@ -84,3 +84,6 @@ This logo image consists only of simple geometric shapes or text. It does not me
 | selenium | Apache-2.0 License | [https://github.com/SeleniumHQ/selenium](https://github.com/SeleniumHQ/selenium) |
 | trio | MIT License | [https://github.com/python-trio/trio](https://github.com/python-trio/trio) |
 | webdriver-manager | MIT License | [https://github.com/SergeyPirogov/webdriver_manager](https://github.com/SergeyPirogov/webdriver_manager) |
+
+### Libs licenses:
+leaflet 1.9.4 - 
