@@ -108,8 +108,45 @@
             }
         };
 
-        // Call the function to load GeoJSON only once
+        // Function to add markers from the JSON file
+        async function addMarkersFromJSON() {
+            try {
+                const response = await fetch('{{ url_for('static', filename='data/eberswalde_wahllokale.json') }}');
+                const data = await response.json();
+
+                // Create a custom icon
+                const customIcon = L.icon({
+                    iconUrl: '{{ url_for('static', filename='images/wahllokal_pin.svg') }}',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -25]
+                });
+
+                // Loop through the JSON data and add markers
+                data.forEach(location => {
+                    const marker = L.marker([location.lat, location.lon], { icon: customIcon }).addTo(map);
+
+                    // Create a popup with detailed information
+                    const popupContent = `
+                        <b>Wahllokal ${location.Wahllokal}</b><br>
+                        ${location.Anschrift}
+                    `;
+                    marker.bindPopup(popupContent);
+                });
+
+                // Center the map on the first marker and set a suitable zoom level
+                if (data.length > 0) {
+                    map.setView([data[0].lat, data[0].lon], 12);
+                }
+
+            } catch (error) {
+                console.error('Error loading JSON for markers:', error);
+            }
+        }
+
+        // Call the function to load GeoJSON and add markers on page load
         loadGeoJSON();
+        addMarkersFromJSON();
     </script>
 </body>
 </html>
