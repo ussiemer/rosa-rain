@@ -10,7 +10,7 @@ Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     python3 -m venv venv
 ```
 
-3. 2. 'pip install -r requirements.txt'
+3. 'pip install -r requirements.txt'
 
 ```
     aiofiles: For asynchronous file operations.
