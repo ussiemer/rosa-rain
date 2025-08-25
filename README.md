@@ -86,4 +86,8 @@ This logo image consists only of simple geometric shapes or text. It does not me
 | webdriver-manager | MIT License | [https://github.com/SergeyPirogov/webdriver_manager](https://github.com/SergeyPirogov/webdriver_manager) |
 
 ### Libs licenses:
-leaflet 1.9.4 - 
+leaflet 1.9.4 - https://github.com/Leaflet/Leaflet
+BSD 2-Clause License
+Copyright (c) 2010-2025, Volodymyr Agafonkin
+Copyright (c) 2010-2011, CloudMade
+All rights reserved.
