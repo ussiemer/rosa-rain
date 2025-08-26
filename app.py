@@ -18,10 +18,10 @@ def clean_source_file_name(file_name: str) -> str:
     Cleans up a source file name by removing the prefix, extension, and underscores,
     and replacing them with spaces.
     """
-    # The new filename starts with "wahlkreis_XX_..."
-    name_without_prefix = re.sub(r'^wahlkreis_\d+_', '', file_name)
-    name_without_ext = os.path.splitext(name_without_prefix)[0]
-    cleaned_name = name_without_ext.replace('_', ' ')
+    name_without_ext = os.path.splitext(file_name)[0]
+    # This regex is a bit more robust for the new filename format
+    cleaned_name = re.sub(r'^[a-z]+_\d+_\d+_', '', name_without_ext)
+    cleaned_name = cleaned_name.replace('_', ' ')
     return cleaned_name.strip()
 
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
@@ -29,7 +29,6 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("Loading CSV files:", all_files)
     df_list = []
 
-    # New standard columns based on the new CSV output format
     standard_columns = [
         'Merkmal',
         'Erststimmen_Anzahl',
@@ -42,28 +41,26 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
 
     for file in all_files:
         try:
-            # The new CSVs have a proper header, so no need to skip rows
             temp_df = pd.read_csv(file, sep=';', on_bad_lines='skip')
-
-            # The columns in the new CSV are slightly different.
-            # We will use the new standard columns and rename them to a more usable format.
             temp_df.columns = standard_columns
 
-            # Convert types and clean data
-            # Use .apply() for a more robust conversion across columns
             temp_df = temp_df.apply(lambda x: x.astype(str).str.replace(',', '.', regex=False).str.replace('%', '', regex=False) if x.name != 'Merkmal' else x)
-
-            # Convert to float without rounding
             temp_df[standard_columns[1:]] = temp_df[standard_columns[1:]].apply(pd.to_numeric, errors='coerce')
 
-            # Extract electoral district ID from the filename
             base_name = os.path.basename(file)
-            electoral_id_match = re.search(r'^wahlkreis_(\d+)', base_name)
 
-            # Keep the two-digit format
-            electoral_id = electoral_id_match.group(1) if electoral_id_match else None
+            # Extract electoral type and IDs using a more flexible regex
+            electoral_match = re.search(r'^([a-z]+)_(\d+)_(\d+)', base_name)
 
-            temp_df['districtId'] = f"wk{electoral_id}" if electoral_id else None
+            electoral_type = electoral_match.group(1) if electoral_match else None
+            wahlkreis_id = electoral_match.group(2) if electoral_match else None
+            specific_id = electoral_match.group(3) if electoral_match else None
+
+            # Keep the original 'districtId' column name but now with the new 'specificId'
+            # Also add new columns for the wahlkreisId and sourceType
+            temp_df['districtId'] = specific_id if specific_id else None
+            temp_df['wahlkreisId'] = f"wk{wahlkreis_id}" if wahlkreis_id else None
+            temp_df['sourceType'] = electoral_type
             temp_df['locationName'] = clean_source_file_name(base_name)
             temp_df['sourceFile'] = base_name
 
@@ -94,7 +91,7 @@ def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
 
     attrs = {}
     for col in df.columns:
-        if col in ['Merkmal', 'sourceFile', 'locationName', 'districtId']:
+        if col in ['Merkmal', 'sourceFile', 'locationName', 'districtId', 'wahlkreisId', 'sourceType']:
             attrs[col] = graphene.Field(graphene.String)
             continue
 

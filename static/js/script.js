@@ -16,6 +16,8 @@ async function searchData() {
             ZweitstimmenAnteil
             ZweitstimmenGewinn
             districtId
+            wahlkreisId
+            sourceType
             sourceFile
         }
     }
@@ -53,8 +55,10 @@ async function searchData() {
                 filteredData.forEach(item => {
                     const resultDiv = document.createElement('div');
                     resultDiv.classList.add('result-item');
-                    resultDiv.setAttribute('data-district-id', item.districtId);
-                    resultDiv.onmouseover = () => { window.highlightDistrict(item.districtId); };
+
+                    // Use the wahlkreisId for the highlighting
+                    resultDiv.setAttribute('data-district-id', item.wahlkreisId);
+                    resultDiv.onmouseover = () => { window.highlightDistrict(item.wahlkreisId); };
                     resultDiv.onmouseout = () => { window.resetHighlight(); };
 
                     const content = Object.entries(item)
@@ -67,8 +71,6 @@ async function searchData() {
             }
         } else if (data.data && data.data.allData === null) {
             resultsContainer.textContent = "No results found (null).";
-        } else if (data.data) {
-            resultsContainer.textContent = JSON.stringify(data.data, null, 2);
         } else {
             resultsContainer.textContent = "No data found.";
         }
