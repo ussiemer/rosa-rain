@@ -152,7 +152,7 @@ def main_scraper():
                 processed_urls.add(full_url)
 
                 # Get the filename from the URL to use as base for the sub-links
-                url_filename_match = re.search(r'ergebnisse_wahlkreis_(\d+)\.html|ergebnisse_gemeinde_(\d+)\.html|ergebnisse_ortsteil_(\d+)\.html|ergebnisse_wahlbezirk_(\d+)\.html', full_url)
+                url_filename_match = re.search(r'ergebnisse_wahlkreis_(\d+)\.html|ergebnisse_gemeinde_(\d+)\.html|ergebnisse_ortsteil_(\d+)\.html|ergebnisse_wahlbezirk_(\d+)\.html|ergebnisse_stimmbezirk_(\d+)\.html', full_url)
                 base_filename = "wahlkreis_" + district_id
                 if url_filename_match:
                     if url_filename_match.group(1):
