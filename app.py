@@ -18,53 +18,52 @@ def clean_source_file_name(file_name: str) -> str:
     Cleans up a source file name by removing the prefix, extension, and underscores,
     and replacing them with spaces.
     """
-    name_without_prefix = re.sub(r'^\d+_-_', '', file_name)
+    # The new filename starts with "wahlkreis_XX_..."
+    name_without_prefix = re.sub(r'^wahlkreis_\d+_', '', file_name)
     name_without_ext = os.path.splitext(name_without_prefix)[0]
     cleaned_name = name_without_ext.replace('_', ' ')
     return cleaned_name.strip()
 
-# This function is updated to remove the 'specificDistrictName' column
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
     print("Loading CSV files:", all_files)
     df_list = []
 
+    # New standard columns based on the new CSV output format
     standard_columns = [
         'Merkmal',
-        'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Erststimmen_Gewinn',
-        'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil', 'Zweitstimmen_Gewinn',
+        'Erststimmen_Anzahl',
+        'Erststimmen_Anteil',
+        'Erststimmen_Gewinn',
+        'Zweitstimmen_Anzahl',
+        'Zweitstimmen_Anteil',
+        'Zweitstimmen_Gewinn'
     ]
-
-    int_cols = ['Erststimmen_Anzahl', 'Erststimmen_Gewinn', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Gewinn']
-    float_cols = ['Erststimmen_Anteil', 'Zweitstimmen_Anteil']
 
     for file in all_files:
         try:
-            temp_df = pd.read_csv(file, sep=';', skiprows=4, header=None)
+            # The new CSVs have a proper header, so no need to skip rows
+            temp_df = pd.read_csv(file, sep=';', on_bad_lines='skip')
 
-            if temp_df.shape[1] != len(standard_columns):
-                print(f"Warning: Column count mismatch in {file}. Skipping this file.")
-                continue
-
+            # The columns in the new CSV are slightly different.
+            # We will use the new standard columns and rename them to a more usable format.
             temp_df.columns = standard_columns
 
-            for col in temp_df.columns:
-                if col == 'Merkmal':
-                    continue
-                temp_df[col] = temp_df[col].astype(str).str.strip().str.replace(',', '.', regex=False)
-                temp_df[col] = temp_df[col].str.replace('%', '', regex=False)
-                if col in float_cols:
-                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float)
-                elif col in int_cols:
-                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float).round().astype('Int64')
+            # Convert types and clean data
+            # Use .apply() for a more robust conversion across columns
+            temp_df = temp_df.apply(lambda x: x.astype(str).str.replace(',', '.', regex=False).str.replace('%', '', regex=False) if x.name != 'Merkmal' else x)
 
+            # Convert to float without rounding
+            temp_df[standard_columns[1:]] = temp_df[standard_columns[1:]].apply(pd.to_numeric, errors='coerce')
+
+            # Extract electoral district ID from the filename
             base_name = os.path.basename(file)
+            electoral_id_match = re.search(r'^wahlkreis_(\d+)', base_name)
 
-            electoral_id = re.search(r'^(\d+)', base_name)
-            temp_df['districtId'] = f"wk{electoral_id.group(1)}" if electoral_id else None
+            # Keep the two-digit format
+            electoral_id = electoral_id_match.group(1) if electoral_id_match else None
 
-            # Removed the 'specificDistrictName' column
-
+            temp_df['districtId'] = f"wk{electoral_id}" if electoral_id else None
             temp_df['locationName'] = clean_source_file_name(base_name)
             temp_df['sourceFile'] = base_name
 
@@ -86,7 +85,6 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("DataFrame loaded with columns:", df.columns.tolist())
     return df
 
-# This function is updated to remove the 'specificDistrictName' field
 def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
     if df.empty or not len(df.columns):
         print("DataFrame is empty, cannot create GraphQL type.")
