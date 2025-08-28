@@ -193,8 +193,8 @@ function filterPollingPlaceMarkers(idsToDisplay) {
     const customIcon = L.icon({
         // Use the global variable
         iconUrl: window.STATIC_PATHS.wahllokalPin,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        iconSize: [21, 21],
+        iconAnchor: [10.5, 21],
         popupAnchor: [0, -25]
     });
     const idsSet = new Set(idsToDisplay);
@@ -213,8 +213,8 @@ function showAllPollingPlaceMarkers() {
     const customIcon = L.icon({
         // Use the global variable
         iconUrl: window.STATIC_PATHS.wahllokalPin,
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
+        iconSize: [21, 21],
+        iconAnchor: [10.5, 21],
         popupAnchor: [0, -25]
     });
     allPollingPlaceData.forEach(data => {
