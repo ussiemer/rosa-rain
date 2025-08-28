@@ -99,3 +99,36 @@ This logo image consists only of simple geometric shapes or text. It does not me
 | selenium | Apache-2.0 License | [https://github.com/SeleniumHQ/selenium](https://github.com/SeleniumHQ/selenium) |
 | trio | MIT License | [https://github.com/python-trio/trio](https://github.com/python-trio/trio) |
 | webdriver-manager | MIT License | [https://github.com/SergeyPirogov/webdriver_manager](https://github.com/SergeyPirogov/webdriver_manager) |
+
+
+### Lib licenses:
+leaflet 1.9.4 - https://github.com/Leaflet/Leaflet
+BSD 2-Clause License
+Copyright (c) 2010-2025, Volodymyr Agafonkin
+Copyright (c) 2010-2011, CloudMade
+All rights reserved.
+
+
+### Landeswahlleitung Brandenburg
+Alle Wahldaten sind öffentliches Sachgut der Brandenburger Bürger*innen.
+
+Herausgeber
+<pre>
+        Der Landeswahlleiter des Landes Brandenburg
+
+        Henning-von-Tresckow-Str. 9 - 13
+        14467 Potsdam
+
+        landeswahlleiter@mik.brandenburg.de
+        +49 331 866-2900
+        +49 331 866-2202	
+</pre>
+Vertretungsberechtigter: Landeswahlleiter Josef Nußbaum
+
+Verantwortlich im Sinne des Presserechts:
+<pre>
+        Geschäftsstelle
+        Leiterin der Geschäftsstelle
+        landeswahlleiter@mik.brandenburg.de
+        +49 331 8662239
+</pre>

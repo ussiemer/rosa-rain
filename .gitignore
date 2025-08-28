@@ -14,4 +14,3 @@ app.log
 .kdev4/
 .kdev4/*
 *.kdev4
-results/*
