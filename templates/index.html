@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>GraphQL Data Search</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          crossorigin=""/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='lib/leaflet.css') }}"
+             crossorigin=""/>
 </head>
 <body>
     <div class="container">
@@ -16,66 +16,24 @@
         <div class="search-container">
             <input type="text" id="searchInput" class="search-input" placeholder="Enter search keyword...">
             <button class="search-button" onclick="searchData()">Search</button>
+            <button id="theme-toggle-button" class="theme-toggle">☀️</button>
         </div>
         <div class="grid-container">
-            <pre id="resultsPre">
+            <div id="resultsPre">
                 <span style="color: #888888;">Your search results will appear here.</span>
-            </pre>
-            <div id="osm" style="height:35vh"></div>
+            </div>
+            <div id="osm" style="height:49vh"></div>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            crossorigin=""></script>
+    <script src="{{ url_for('static', filename='lib/leaflet.js') }}"
+             crossorigin=""></script>
     <script>
-        // Force the map to use the Canvas renderer to fix potential drawing bugs
-        const myRenderer = L.canvas();
-
-        // Initialize the map, centered on Berlin with a zoom level of 7
-        const map = L.map('osm', {
-            renderer: myRenderer
-        }).setView([52.53, 13.38], 7);
-
-        // Add a tile layer (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Function to load and add GeoJSON data to the map
-        async function loadGeoJSON() {
-            try {
-                const response = await fetch('{{ url_for('static', filename='data/landtagswahl_brandenburg_2024_geo.json') }}');
-                const data = await response.json();
-
-                // Access the correct GeoJSON object via the 'geoJSON' key
-                const geojsonData = data.geoJSON;
-
-                // Add the GeoJSON data to the map, also using the Canvas renderer
-                L.geoJSON(geojsonData, {
-                    renderer: myRenderer,
-                    style: function(feature) {
-                        return {
-                            color: '#007BFF',
-                            weight: 1,
-                            opacity: 1,
-                            fillColor: '#007BFF',
-                            fillOpacity: 0.1
-                        };
-                    },
-                    onEachFeature: function(feature, layer) {
-                        if (feature.properties && feature.properties.name) {
-                            layer.bindPopup(feature.properties.name);
-                        }
-                    }
-                }).addTo(map);
-            } catch (error) {
-                console.error('Error loading GeoJSON:', error);
-            }
-        }
-
-        // Call the function to load GeoJSON only once
-        loadGeoJSON();
+        window.STATIC_PATHS = {
+            wahllokalPin: '{{ url_for('static', filename='images/wahllokal_pin.svg') }}',
+            wahllokalData: '{{ url_for('static', filename='data/locations/') }}',
+            geojson: '{{ url_for('static', filename='data/landtagswahl_brandenburg_2024_geo.json') }}'
+        };
     </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
 </body>
 </html>

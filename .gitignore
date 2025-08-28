@@ -1,0 +1,17 @@
+.metadata
+.DS_Store
+*.log
+__pycache__
+.mypy_cache
+.venv
+.vscode
+venv/*
+log/
+*.env
+*.kate-swp
+app.log
+.kdev4
+.kdev4/
+.kdev4/*
+*.kdev4
+results/*

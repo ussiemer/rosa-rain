@@ -18,12 +18,12 @@ def clean_source_file_name(file_name: str) -> str:
     Cleans up a source file name by removing the prefix, extension, and underscores,
     and replacing them with spaces.
     """
-    name_without_prefix = re.sub(r'^\d+_-_', '', file_name)
-    name_without_ext = os.path.splitext(name_without_prefix)[0]
-    cleaned_name = name_without_ext.replace('_', ' ')
+    name_without_ext = os.path.splitext(file_name)[0]
+    # This regex is a bit more robust for the new filename format
+    cleaned_name = re.sub(r'^[a-z]+_\d+_\d+_', '', name_without_ext)
+    cleaned_name = cleaned_name.replace('_', ' ')
     return cleaned_name.strip()
 
-# This function is updated to remove the 'specificDistrictName' column
 def load_all_csvs(folder_path: str) -> pd.DataFrame:
     all_files = glob.glob(os.path.join(folder_path, "*.csv"))
     print("Loading CSV files:", all_files)
@@ -31,40 +31,36 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
 
     standard_columns = [
         'Merkmal',
-        'Erststimmen_Anzahl', 'Erststimmen_Anteil', 'Erststimmen_Gewinn',
-        'Zweitstimmen_Anzahl', 'Zweitstimmen_Anteil', 'Zweitstimmen_Gewinn',
+        'Erststimmen_Anzahl',
+        'Erststimmen_Anteil',
+        'Erststimmen_Gewinn',
+        'Zweitstimmen_Anzahl',
+        'Zweitstimmen_Anteil',
+        'Zweitstimmen_Gewinn'
     ]
-
-    int_cols = ['Erststimmen_Anzahl', 'Erststimmen_Gewinn', 'Zweitstimmen_Anzahl', 'Zweitstimmen_Gewinn']
-    float_cols = ['Erststimmen_Anteil', 'Zweitstimmen_Anteil']
 
     for file in all_files:
         try:
-            temp_df = pd.read_csv(file, sep=';', skiprows=4, header=None)
-
-            if temp_df.shape[1] != len(standard_columns):
-                print(f"Warning: Column count mismatch in {file}. Skipping this file.")
-                continue
-
+            temp_df = pd.read_csv(file, sep=';', on_bad_lines='skip')
             temp_df.columns = standard_columns
 
-            for col in temp_df.columns:
-                if col == 'Merkmal':
-                    continue
-                temp_df[col] = temp_df[col].astype(str).str.strip().str.replace(',', '.', regex=False)
-                temp_df[col] = temp_df[col].str.replace('%', '', regex=False)
-                if col in float_cols:
-                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float)
-                elif col in int_cols:
-                    temp_df[col] = pd.to_numeric(temp_df[col], errors='coerce').fillna(0).astype(float).round().astype('Int64')
+            temp_df = temp_df.apply(lambda x: x.astype(str).str.replace(',', '.', regex=False).str.replace('%', '', regex=False) if x.name != 'Merkmal' else x)
+            temp_df[standard_columns[1:]] = temp_df[standard_columns[1:]].apply(pd.to_numeric, errors='coerce')
 
             base_name = os.path.basename(file)
 
-            electoral_id = re.search(r'^(\d+)', base_name)
-            temp_df['districtId'] = f"wk{electoral_id.group(1)}" if electoral_id else None
+            # Extract electoral type and IDs using a more flexible regex
+            electoral_match = re.search(r'^([a-z]+)_(\d+)_(\d+)', base_name)
 
-            # Removed the 'specificDistrictName' column
+            electoral_type = electoral_match.group(1) if electoral_match else None
+            wahlkreis_id = electoral_match.group(2) if electoral_match else None
+            specific_id = electoral_match.group(3) if electoral_match else None
 
+            # Keep the original 'districtId' column name but now with the new 'specificId'
+            # Also add new columns for the wahlkreisId and sourceType
+            temp_df['districtId'] = specific_id if specific_id else None
+            temp_df['wahlkreisId'] = f"wk{wahlkreis_id}" if wahlkreis_id else None
+            temp_df['sourceType'] = electoral_type
             temp_df['locationName'] = clean_source_file_name(base_name)
             temp_df['sourceFile'] = base_name
 
@@ -86,7 +82,6 @@ def load_all_csvs(folder_path: str) -> pd.DataFrame:
     print("DataFrame loaded with columns:", df.columns.tolist())
     return df
 
-# This function is updated to remove the 'specificDistrictName' field
 def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
     if df.empty or not len(df.columns):
         print("DataFrame is empty, cannot create GraphQL type.")
@@ -96,7 +91,7 @@ def create_graphql_type(df: pd.DataFrame) -> graphene.ObjectType:
 
     attrs = {}
     for col in df.columns:
-        if col in ['Merkmal', 'sourceFile', 'locationName', 'districtId']:
+        if col in ['Merkmal', 'sourceFile', 'locationName', 'districtId', 'wahlkreisId', 'sourceType']:
             attrs[col] = graphene.Field(graphene.String)
             continue
 
@@ -148,6 +143,13 @@ def create_schema_from_df(df: pd.DataFrame):
             return records
     schema = graphene.Schema(query=Query)
 
+
+# Function to geolocate all polling places e.g.
+# only if districtId has 16 digits (1207353041890003) it is a polling place
+# the last 4 digits are the local polling place
+# geolocate the name / place / organisation using geocoding_service.py in the background
+# add lat lon to the graphql output
+
 app = Quart(__name__)
 
 async def load_data_and_create_schema():
@@ -194,6 +196,24 @@ async def graphql_endpoint():
     except Exception as e:
         print(f"GraphQL error: {e}")
         return jsonify({"errors": [{"message": str(e)}]}), 400
+
+# In your app.py file, add this new route:
+from quart import jsonify
+
+@app.route("/api/polling-places")
+async def get_polling_places():
+    """
+    Returns a list of all polling place IDs (filenames) in the locations directory.
+    """
+    locations_dir = 'static/data/locations'
+    try:
+        # List all files, remove the .csv extension, and return
+        polling_place_ids = [os.path.splitext(f)[0] for f in os.listdir(locations_dir) if f.endswith('.csv')]
+        return jsonify(polling_place_ids)
+    except FileNotFoundError:
+        return jsonify({"error": "Locations directory not found."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/static/<path:filename>")
 async def static_files(filename):

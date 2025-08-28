@@ -12,102 +12,117 @@ import traceback
 
 def sanitize_filename(name):
     """
-    Reinigt einen String, um ihn zu einem gültigen Dateinamen zu machen, indem
-    ungültige Zeichen entfernt oder ersetzt werden.
+    Cleans a string to make it a valid filename by removing or replacing
+    invalid characters.
     """
     name = re.sub(r'[\\/:*?"<>|]', '_', name)
     name = name.replace(' ', '_')
     return name.strip('_. ')
 
-def process_url_and_get_title(driver, full_url, download_dir):
+def process_url_and_get_title(driver, full_url, download_dir, base_filename):
     """
-    Navigiert zu einer bestimmten URL, extrahiert die Tabellendaten und speichert sie.
-    Verwendet den Seitentitel als Namen und benennt die Spalten um.
+    Navigates to a specific URL, extracts the table data, and saves it.
+    Uses the page title as the name and renames the columns.
     """
     try:
-        print(f"\nVerarbeite URL: {full_url}")
+        print(f"\nProcessing URL: {full_url}")
         driver.get(full_url)
 
-        # Holen Sie den Seitentitel und extrahieren Sie den Namen mit Regex
+        # Get the page title and extract the name with regex
         title = driver.title
         match = re.search(r" in (.*)", title)
         name = match.group(1).strip() if match else title
 
         if not name:
-            name = "Unbekannt"
-            print("⚠️ Seitentitel konnte nicht extrahiert werden. Verwende 'Unbekannt'.")
+            name = "Unknown"
+            print("⚠️ Could not extract page title. Using 'Unknown'.")
 
-        print(f"Name der Seite: '{name}'")
+        print(f"Page name: '{name}'")
 
-        # Verkürzen Sie den Timeout, um die Wartezeit zu verringern
-        WebDriverWait(driver, 5).until(
+        # Shorten the timeout to reduce waiting time
+        WebDriverWait(driver, 0.77).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "table.tablesaw.table-stimmen[data-tablejigsaw-downloadable]"))
         )
 
         table_selector = "table.tablesaw.table-stimmen[data-tablejigsaw-downloadable]"
         table_element = driver.find_element(By.CSS_SELECTOR, table_selector)
-
         table_html = table_element.get_attribute('outerHTML')
-
         df_list = pd.read_html(StringIO(table_html), header=[0, 1])
 
         if df_list:
             df = df_list[0]
 
-            new_columns = []
-            for col_tuple in df.columns:
-                if 'Unnamed' in col_tuple[0] and col_tuple[1] == 'Unnamed: 0_level_1':
-                    new_name = 'Merkmal'
-                else:
-                    new_name = f"{col_tuple[0]}_{col_tuple[1]}"
+            # Manually define the correct column names
+            correct_headers = [
+                'Merkmal_Unnamed:_0_level_1',
+                'Erststimmen_Anzahl',
+                'Erststimmen_Anteil',
+                'Erststimmen_Gewinn',
+                'Zweitstimmen_Anzahl',
+                'Zweitstimmen_Anteil',
+                'Zweitstimmen_Gewinn'
+            ]
 
-                new_columns.append(new_name)
+            # Since the number of columns can vary based on the number of parties,
+            # we need to build the column list dynamically and then rename the first few.
+            new_columns = []
+            for col in df.columns:
+                if isinstance(col, tuple):
+                    # For Erst- and Zweitstimmen columns
+                    if 'Erststimmen' in col[0]:
+                        if 'Anzahl' in col[1]:
+                            new_columns.append('Erststimmen_Anzahl')
+                        elif 'Anteil' in col[1]:
+                            new_columns.append('Erststimmen_Anteil')
+                        elif 'Gewinn' in col[1]:
+                            new_columns.append('Erststimmen_Gewinn')
+                        else:
+                            new_columns.append(f"Erststimmen_{col[1]}")
+                    elif 'Zweitstimmen' in col[0]:
+                        if 'Anzahl' in col[1]:
+                            new_columns.append('Zweitstimmen_Anzahl')
+                        elif 'Anteil' in col[1]:
+                            new_columns.append('Zweitstimmen_Anteil')
+                        elif 'Gewinn' in col[1]:
+                            new_columns.append('Zweitstimmen_Gewinn')
+                        else:
+                            new_columns.append(f"Zweitstimmen_{col[1]}")
+                    else:
+                        new_columns.append(f"{col[0]}_{col[1]}")
+                else:
+                    # For the first column (Merkmal)
+                    new_columns.append(f"{col}_Unnamed:_0_level_1")
 
             df.columns = new_columns
 
-            # Regex-Bereinigung, um doppelte Namen, "more" und unnötige Symbole zu entfernen
-            df.columns = [re.sub(r'(Erststimmenmore|Zweitstimmenmore)', '', col) for col in df.columns]
-            df.columns = [re.sub(r'Gewinn.*', 'Gewinn', col) for col in df.columns]
-            df.columns = [re.sub(r'more', '', col) for col in df.columns]
-
-            # Entfernt die Duplikate (z.B. "ErststimmenErststimmen")
-            df.columns = [re.sub(r'^(Erststimmen|Zweitstimmen)\1', r'\1', col) for col in df.columns]
-
-            # Letzte Bereinigung für saubere CSV-Header
-            df.columns = [col.replace(' ', '_').replace('__', '_').replace('-', '').replace('%', '') for col in df.columns]
-
-            filename = f"{sanitize_filename(name)}.csv"
+            # New filename format: [base_filename]_[place_name].csv
+            filename = f"{base_filename}_{sanitize_filename(name)}.csv"
             file_path = os.path.join(download_dir, filename)
-
-            final_df = df
-            final_df.to_csv(file_path, index=False, sep=';', encoding='utf-8')
-            print(f"✅ Daten erfolgreich gespeichert in: {file_path}")
+            df.to_csv(file_path, index=False, sep=';', encoding='utf-8')
+            print(f"✅ Data successfully saved to: {file_path}")
         else:
-            print(f"⚠️ Keine Tabelle gefunden mit pandas für '{name}'.")
+            print(f"⚠️ No table found with pandas for '{name}'.")
 
         return driver.current_url
     except Exception as e:
-        print(f"❌ Ein Fehler ist aufgetreten beim Verarbeiten von '{full_url}': {e}")
+        print(f"❌ An error occurred while processing '{full_url}': {e}")
         traceback.print_exc()
-        # Verkürzen Sie den Sleep-Timer, um schneller fortzufahren
         time.sleep(1)
         return None
 
-def recursive_get_election_data():
+def main_scraper():
     """
-    Extrahiert rekursiv Wahldaten von wahlergebnisse.brandenburg.de.
-    Diese Funktion navigiert durch verschachtelte Links, um alle verfügbaren
-    Wahldaten herunterzuladen und als CSV-Dateien zu speichern.
+    Main function to scrape election data for all 45 districts and their sub-links.
     """
     chromium_driver_path = "/usr/bin/chromedriver"
     if not os.path.exists(chromium_driver_path):
-        print(f"Fehler: Chromium-Treiber nicht gefunden unter {chromium_driver_path}")
+        print(f"Error: Chromium driver not found at {chromium_driver_path}")
         return
 
     download_dir = "./results"
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
-        print(f"Verzeichnis erstellt: {download_dir}")
+        print(f"Directory created: {download_dir}")
 
     driver = None
     try:
@@ -119,45 +134,69 @@ def recursive_get_election_data():
         service = ChromiumService(executable_path=chromium_driver_path)
         driver = webdriver.Chrome(service=service, options=options)
 
-        # Verwenden Sie einen Stack, um die zu besuchenden URLs zu verwalten.
-        url_stack = ["https://wahlergebnisse.brandenburg.de/12/500/20240922/landtagswahl_land/ergebnisse_land_120.html"]
-        processed_urls = set()
+        base_url_pattern = "https://wahlergebnisse.brandenburg.de/12/500/20240922/landtagswahl_land/ergebnisse_wahlkreis_{:02d}.html"
 
-        while url_stack:
-            full_url = url_stack.pop()
+        for i in range(1, 45):  # Iterate from 01 to 45
+            district_id = f"{i:02d}"
+            base_url = base_url_pattern.format(i)
 
-            if full_url in processed_urls:
-                continue
+            url_stack = [base_url]
+            processed_urls = set()
 
-            processed_urls.add(full_url)
+            while url_stack:
+                full_url = url_stack.pop()
 
-            process_url_and_get_title(driver, full_url, download_dir)
+                if full_url in processed_urls:
+                    continue
 
-            try:
-                # Verkürzen Sie den Timeout, um die Wartezeit zu verringern
-                WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, "//h5[contains(text(), 'Untergeordnet')]/following-sibling::ul[contains(@class, 'linklist')]"))
-                )
+                processed_urls.add(full_url)
 
-                sub_links_container = driver.find_element(By.XPATH, "//h5[contains(text(), 'Untergeordnet')]/following-sibling::ul[contains(@class, 'linklist')]")
-                sub_links = sub_links_container.find_elements(By.TAG_NAME, 'a')
+                # briefwahlbezirk
+                # Get the filename from the URL to use as base for the sub-links
+                url_filename_match = re.search(r'ergebnisse_wahlkreis_(\d+)\.html|ergebnisse_gemeinde_(\d+)\.html|ergebnisse_ortsteil_(\d+)\.html|ergebnisse_wahlbezirk_(\d+)\.html|ergebnisse_stimmbezirk_(\d+)\.html|ergebnisse_briefwahlbezirk_(\d+)\.html|ergebnisse_amt_(\d+)\.html', full_url)
+                base_filename = "wahlkreis_" + district_id
+                if url_filename_match:
+                    if url_filename_match.group(1):
+                        base_filename = "wahlkreis_" + district_id + "_" + url_filename_match.group(1)
+                    elif url_filename_match.group(2):
+                        base_filename = "gemeinde_" + district_id + "_" + url_filename_match.group(2)
+                    elif url_filename_match.group(3):
+                        base_filename = "ortsteil_" + district_id + "_" + url_filename_match.group(3)
+                    elif url_filename_match.group(4):
+                        base_filename = "wahlbezirk_" + district_id + "_" + url_filename_match.group(4)
+                    elif url_filename_match.group(5):
+                        base_filename = "stimmbezirk_" + district_id + "_" + url_filename_match.group(5)
+                    elif url_filename_match.group(6):
+                        base_filename = "briefwahlbezirk_" + district_id + "_" + url_filename_match.group(6)
+                    elif url_filename_match.group(7):
+                        base_filename = "amt_" + district_id + "_" + url_filename_match.group(7)
 
-                if sub_links:
-                    print(f"Habe {len(sub_links)} verschachtelte Links gefunden. Füge sie dem Stack hinzu.")
-                    for link in sub_links:
-                        new_link_href = link.get_attribute('href')
-                        if new_link_href not in processed_urls:
-                            url_stack.append(new_link_href)
-            except Exception:
-                print("Keine weiteren verschachtelten Links auf dieser Seite gefunden. Fahre fort.")
+                process_url_and_get_title(driver, full_url, download_dir, base_filename)
+
+                try:
+                    WebDriverWait(driver, 0.14).until(
+                        EC.presence_of_element_located((By.XPATH, "//h5[contains(text(), 'Untergeordnet')]/following-sibling::ul[contains(@class, 'linklist')]"))
+                    )
+
+                    sub_links_container = driver.find_element(By.XPATH, "//h5[contains(text(), 'Untergeordnet')]/following-sibling::ul[contains(@class, 'linklist')]")
+                    sub_links = sub_links_container.find_elements(By.TAG_NAME, 'a')
+
+                    if sub_links:
+                        print(f"Found {len(sub_links)} nested links. Adding them to the stack.")
+                        for link in sub_links:
+                            new_link_href = link.get_attribute('href')
+                            if new_link_href and new_link_href not in processed_urls:
+                                url_stack.append(new_link_href)
+                except Exception:
+                    print("No further nested links found on this page. Continuing.")
 
     except Exception as e:
-        print(f"Ein allgemeiner Fehler ist aufgetreten: {e}")
+        print(f"A general error occurred: {e}")
         traceback.print_exc()
     finally:
         if driver:
             driver.quit()
-            print("\nWebDriver geschlossen.")
+            print("\nWebDriver closed.")
 
 if __name__ == "__main__":
-    recursive_get_election_data()
+    main_scraper()

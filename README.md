@@ -1,11 +1,17 @@
 <img src="https://github.com/ussiemer/rosa-rain/blob/main/static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
 
-# Antifaschistische Wahlsteckbriefe
-Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellt daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen.
+# rosa-rain
+Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
 
 1. Download latest chromium
+    
+2. Use a virtual environment.
+```
+    python3 -m venv venv
+    source venv/bin/activate
+```
 
-2. 'pip install -r requirements.txt'
+3. 'pip install -r requirements.txt'
 
 ```
     aiofiles: For asynchronous file operations.
@@ -25,25 +31,28 @@ Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     trio: An asynchronous I/O library.
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
-    
-## Venv
-```
-    python3 -m venv venv
-```
-
-## Chrome driver
-```
-    chromium_driver_path = "/usr/bin/chromedriver"
-```
 
 ## Run rosa-vote.py
+Get all the election data from the official government website.
 ```
     python rosa-vote.py
 ```
 
 ## Run rosa-rain.py
+If you want to output all pdf flyers, just run:
 ```
     python rosa-rain.py
+```
+
+## Geolocate polling places
+To geolocate all polling places you will need a geocode.maps.co api key in a .env file
+```
+    GEOCODE_API_KEY=
+```
+
+### Run geocode.py
+```
+    python geocode.py
 ```
 
 ## Run app.py
@@ -51,7 +60,13 @@ Dieses Skript lädt alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     python app.py
 ```
 
-## License
+### Chrome driver
+If you have problems with your chromdriver check:
+```
+    chromium_driver_path = "/usr/bin/chromedriver"
+```
+
+### License
 https://en.wikipedia.org/wiki/Antifa_(Germany)#/media/File:Antifalogo_alt2.svg
 1930s logo of Antifaschistische Aktion
 
