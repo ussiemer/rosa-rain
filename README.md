@@ -32,6 +32,12 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
 
+## Run app.py
+App will be exposed on 0.0.0.0:5000
+```
+    python app.py
+```
+
 ## Run rosa-vote.py
 Get all the election data from the official government website.
 ```
@@ -53,11 +59,6 @@ To geolocate all polling places you will need a geocode.maps.co api key in a .en
 ### Run geocode.py
 ```
     python geocode.py
-```
-
-## Run app.py
-```
-    python app.py
 ```
 
 ### Chrome driver
