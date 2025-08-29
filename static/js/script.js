@@ -75,7 +75,6 @@ async function searchData() {
 
         if (data.errors && data.errors.length) {
             resultsContainer.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
-            showAllPollingPlaceMarkers();
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
             let filteredData = data.data.allData.filter(item =>
             (item.ErststimmenAnzahl > 0) || (item.ZweitstimmenAnzahl > 0)
@@ -85,7 +84,6 @@ async function searchData() {
 
             if (filteredData.length === 0) {
                 resultsContainer.textContent = "No results found with more than 0 votes.";
-                pollingPlaceMarkers.clearLayers();
             } else {
                 resultsContainer.innerHTML = '';
 
@@ -110,16 +108,16 @@ async function searchData() {
             }
         } else if (data.data && data.data.allData === null) {
             resultsContainer.textContent = "No results found (null).";
-            pollingPlaceMarkers.clearLayers();
         } else {
             resultsContainer.textContent = "No data found.";
-            pollingPlaceMarkers.clearLayers();
         }
-        filterPollingPlaceMarkers(pollingPlaceIdsToShow);
+
+        // Pass the IDs to the marker function
+        showAllPollingPlaceMarkers(pollingPlaceIdsToShow);
+
     } catch (error) {
         resultsContainer.textContent = `Error: ${error.message}`;
         console.error('Error running GraphQL query:', error);
-        showAllPollingPlaceMarkers();
     }
 }
 
@@ -188,29 +186,8 @@ async function loadAllPollingPlaceData() {
     showAllPollingPlaceMarkers();
 }
 
-function filterPollingPlaceMarkers(idsToDisplay) {
-    pollingPlaceMarkers.clearLayers();
-    const customIcon = L.icon({
-        // Use the global variable
-        iconUrl: window.STATIC_PATHS.wahllokalPin,
-        iconSize: [21, 21],
-        iconAnchor: [10.5, 21],
-        popupAnchor: [0, -25]
-    });
-    const idsSet = new Set(idsToDisplay);
-    allPollingPlaceData.forEach(data => {
-        if (idsSet.has(data.id)) {
-            const marker = L.marker([data.lat, data.lon], { icon: customIcon });
-            const popupContent = `<b>${data.name}</b><br>ID: ${data.id}`;
-            marker.bindPopup(popupContent);
-            pollingPlaceMarkers.addLayer(marker);
-        }
-    });
-}
-
-// Corrected function to display all polling place markers with a GraphQL query in the popup
-// Function to display all polling place markers with a GraphQL query in the popup
-function showAllPollingPlaceMarkers() {
+// Updated function to handle filtering
+function showAllPollingPlaceMarkers(idsToDisplay = null) {
     pollingPlaceMarkers.clearLayers();
     const customIcon = L.icon({
         iconUrl: window.STATIC_PATHS.wahllokalPin,
@@ -219,7 +196,14 @@ function showAllPollingPlaceMarkers() {
         popupAnchor: [0, -25]
     });
 
-    allPollingPlaceData.forEach(data => {
+    // Determine which data to use based on the input
+    let dataToUse = allPollingPlaceData;
+    if (idsToDisplay && idsToDisplay.length > 0) {
+        const idsSet = new Set(idsToDisplay);
+        dataToUse = allPollingPlaceData.filter(data => idsSet.has(data.id));
+    }
+
+    dataToUse.forEach(data => {
         const marker = L.marker([data.lat, data.lon], { icon: customIcon });
         const initialPopupContent = `<b>${data.name}</b><br>ID: ${data.id}<br><br>Loading data...`;
 
@@ -227,8 +211,6 @@ function showAllPollingPlaceMarkers() {
 
         // Add a 'click' event listener to the marker
         marker.on('click', async function () {
-            // Corrected GraphQL query to get the essential data for this district.
-            // It correctly requests the 'Merkmal' and the 'Zweitstimmen_Anzahl' fields.
             const query = `
             query GetPollingPlaceData($districtId: String!) {
                 allData(districtId: $districtId) {
@@ -247,7 +229,6 @@ function showAllPollingPlaceMarkers() {
             }
             `;
 
-            // The variables for the query are the ID of the clicked polling place
             const variables = { districtId: data.id };
 
             try {
@@ -266,7 +247,6 @@ function showAllPollingPlaceMarkers() {
                 } else if (graphqlData.data && graphqlData.data.allData) {
                     const allData = graphqlData.data.allData;
 
-                    // Dynamically generate the popup content from all returned data
                     let tableContent = `
                     <style>
                     .popup-table { width: 100%; border-collapse: collapse; }
@@ -284,12 +264,10 @@ function showAllPollingPlaceMarkers() {
                     <tbody>
                     `;
 
-                    // Loop through all data points and add them to the table
                     allData.forEach(item => {
                         const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 'N/A';
                         const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 'N/A';
 
-                        // Exclude rows that have no Erststimmen and no Zweitstimmen to reduce clutter
                         if (erststimmen !== 0 || zweitstimmen !== 0) {
                             tableContent += `
                             <tr>
@@ -308,7 +286,6 @@ function showAllPollingPlaceMarkers() {
                     popupHtml += tableContent;
                 }
 
-                // Update the popup content after the data is loaded
                 this.setPopupContent(popupHtml);
 
             } catch (error) {
@@ -320,6 +297,7 @@ function showAllPollingPlaceMarkers() {
         pollingPlaceMarkers.addLayer(marker);
     });
 }
+
 
 // Function to load and add GeoJSON data to the map
 async function loadGeoJSON() {
