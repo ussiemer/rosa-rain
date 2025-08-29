@@ -8,21 +8,22 @@
              crossorigin=""/>
 </head>
 <body>
-    <div class="container">
+    <div id="sideBar">
         <div class="logo">
-            <img src="{{ url_for('static', filename='images/Antifalogo_alt2.svg') }}" width="14%"/>
+            <img src="{{ url_for('static', filename='images/Antifalogo_alt2.svg') }}"/>
         </div>
-        <p class="hint">Enter a keyword (e.g., 'III. Weg', 'AfD') to filter results by the 'Merkmal' column.</p>
+    </div>
+    <div class="container">
         <div class="search-container">
-            <input type="text" id="searchInput" class="search-input" placeholder="Enter search keyword...">
+            <input type="text" id="searchInput" class="search-input" placeholder="Enter a keyword (e.g., 'III. Weg', 'AfD') to filter results by the 'Merkmal' column.">
             <button class="search-button" onclick="searchData()">Search</button>
-            <button id="theme-toggle-button" class="theme-toggle">☀️</button>
+            <button id="theme-toggle-button" class="theme-toggle filter-invert">☀️</button>
         </div>
         <div class="grid-container">
             <div id="resultsPre">
                 <span style="color: #888888;">Your search results will appear here.</span>
             </div>
-            <div id="osm" style="height:49vh"></div>
+            <div id="osm" style="height:80.5vh"></div>
         </div>
     </div>
     <script src="{{ url_for('static', filename='lib/leaflet.js') }}"
