@@ -208,19 +208,115 @@ function filterPollingPlaceMarkers(idsToDisplay) {
     });
 }
 
+// Corrected function to display all polling place markers with a GraphQL query in the popup
+// Function to display all polling place markers with a GraphQL query in the popup
 function showAllPollingPlaceMarkers() {
     pollingPlaceMarkers.clearLayers();
     const customIcon = L.icon({
-        // Use the global variable
         iconUrl: window.STATIC_PATHS.wahllokalPin,
         iconSize: [21, 21],
         iconAnchor: [10.5, 21],
         popupAnchor: [0, -25]
     });
+
     allPollingPlaceData.forEach(data => {
         const marker = L.marker([data.lat, data.lon], { icon: customIcon });
-        const popupContent = `<b>${data.name}</b><br>ID: ${data.id}`;
-        marker.bindPopup(popupContent);
+        const initialPopupContent = `<b>${data.name}</b><br>ID: ${data.id}<br><br>Loading data...`;
+
+        marker.bindPopup(initialPopupContent);
+
+        // Add a 'click' event listener to the marker
+        marker.on('click', async function () {
+            // Corrected GraphQL query to get the essential data for this district.
+            // It correctly requests the 'Merkmal' and the 'Zweitstimmen_Anzahl' fields.
+            const query = `
+            query GetPollingPlaceData($districtId: String!) {
+                allData(districtId: $districtId) {
+                    Merkmal
+                    ErststimmenAnzahl
+                    ErststimmenAnteil
+                    ErststimmenGewinn
+                    ZweitstimmenAnzahl
+                    ZweitstimmenAnteil
+                    ZweitstimmenGewinn
+                    districtId
+                    wahlkreisId
+                    sourceType
+                    sourceFile
+                }
+            }
+            `;
+
+            // The variables for the query are the ID of the clicked polling place
+            const variables = { districtId: data.id };
+
+            try {
+                const response = await fetch('/graphql', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, variables })
+                });
+
+                const graphqlData = await response.json();
+
+                let popupHtml = `<b>${data.name}</b><br>ID: ${data.id}<br><br>`;
+
+                if (graphqlData.errors && graphqlData.errors.length) {
+                    popupHtml += "Error: " + graphqlData.errors[0].message;
+                } else if (graphqlData.data && graphqlData.data.allData) {
+                    const allData = graphqlData.data.allData;
+
+                    // Dynamically generate the popup content from all returned data
+                    let tableContent = `
+                    <style>
+                    .popup-table { width: 100%; border-collapse: collapse; }
+                    .popup-table th, .popup-table td { border: 1px solid #ddd; padding: 4px; text-align: left; font-size: 10px; }
+                    .popup-table th { background-color: #f2f2f2; }
+                    </style>
+                    <table class="popup-table">
+                    <thead>
+                    <tr>
+                    <th>Merkmal</th>
+                    <th>Erststimmen</th>
+                    <th>Zweitstimmen</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    `;
+
+                    // Loop through all data points and add them to the table
+                    allData.forEach(item => {
+                        const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 'N/A';
+                        const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 'N/A';
+
+                        // Exclude rows that have no Erststimmen and no Zweitstimmen to reduce clutter
+                        if (erststimmen !== 0 || zweitstimmen !== 0) {
+                            tableContent += `
+                            <tr>
+                            <td>${item.Merkmal}</td>
+                            <td>${erststimmen}</td>
+                            <td>${zweitstimmen}</td>
+                            </tr>
+                            `;
+                        }
+                    });
+
+                    tableContent += `
+                    </tbody>
+                    </table>
+                    `;
+                    popupHtml += tableContent;
+                }
+
+                // Update the popup content after the data is loaded
+                this.setPopupContent(popupHtml);
+
+            } catch (error) {
+                console.error('GraphQL query failed:', error);
+                this.setPopupContent(`<b>${data.name}</b><br>ID: ${data.id}<br><br>Error fetching data.`);
+            }
+        });
+
         pollingPlaceMarkers.addLayer(marker);
     });
 }
