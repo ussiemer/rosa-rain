@@ -32,10 +32,10 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
 
-## Run app.py
+## Run app.py with hypercorn
 App will be exposed on 0.0.0.0:5000
 ```
-    python app.py
+    hypercorn app:app --workers 2
 ```
 
 ## Run rosa-vote.py

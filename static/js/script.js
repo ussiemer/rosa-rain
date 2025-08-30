@@ -157,15 +157,17 @@ async function loadAllPollingPlaceData() {
         return;
     }
 
-    for (const id of pollingPlaceIds) {
-        // Use the global variable
+    // Create an array of promises, one for each fetch request
+    const fetchPromises = pollingPlaceIds.map(id => {
         const filePath = window.STATIC_PATHS.wahllokalData + `${id}.csv`;
-        try {
-            const response = await fetch(filePath);
+        return fetch(filePath)
+        .then(response => {
             if (!response.ok) {
                 throw new Error(`File not found or network error: ${filePath}`);
             }
-            const csvText = await response.text();
+            return response.text();
+        })
+        .then(csvText => {
             const lines = csvText.trim().split('\n');
             if (lines.length > 1) {
                 const values = lines[1].split(',').map(v => v.trim());
@@ -173,16 +175,24 @@ async function loadAllPollingPlaceData() {
                     id: id,
                     name: values[0],
                     lat: parseFloat(values[1]),
-                    lon: parseFloat(values[2])
+              lon: parseFloat(values[2])
                 };
-                if (!isNaN(locationData.lat) && !isNaN(locationData.lon)) {
-                    allPollingPlaceData.push(locationData);
-                }
+                return !isNaN(locationData.lat) && !isNaN(locationData.lon) ? locationData : null;
             }
-        } catch (error) {
+            return null;
+        })
+        .catch(error => {
             console.error(`Error processing file ${filePath}:`, error);
-        }
-    }
+            return null; // Return null on error to avoid Promise.all failure
+        });
+    });
+
+    // Use Promise.all to wait for all fetch requests to complete
+    const results = await Promise.all(fetchPromises);
+
+    // Filter out any null values from failed requests and store the valid data
+    allPollingPlaceData = results.filter(data => data !== null);
+
     showAllPollingPlaceMarkers();
 }
 
