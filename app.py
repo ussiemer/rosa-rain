@@ -217,6 +217,9 @@ async def get_polling_places():
 
 @app.route("/static/<path:filename>")
 async def static_files(filename):
+    # Add a case here to redirect favicon.ico to the SVG file.
+    if filename == 'favicon.ico':
+        return redirect('/static/images/Antifalogo_alt2.svg')
     return await send_from_directory('static', filename)
 
 if __name__ == "__main__":
