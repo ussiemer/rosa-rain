@@ -3,6 +3,9 @@
 # rosa-rain
 Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
 
+<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
+<img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
+
 
 1. Download latest chromium
     
@@ -32,8 +35,6 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     trio: An asynchronous I/O library.
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
-
-<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
 
 ## Run app.py with hypercorn
 App will be exposed on 0.0.0.0:5000
