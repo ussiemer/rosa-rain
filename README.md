@@ -1,4 +1,4 @@
-<img src="./static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="21%"/>
+<img src="./static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="14%"/>
 
 # rosa-rain
 Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
