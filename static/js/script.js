@@ -37,10 +37,21 @@ async function searchData() {
     const keyword = dom.searchInput.value;
     const resultsContainer = dom.resultsPre;
 
+    // Split the keyword into Merkmal and threshold
+    const parts = keyword.split('>');
+    const merkmal = parts[0].trim();
+    const threshold = parts.length > 1 ? parseInt(parts[1].trim(), 10) : 0;
+
+    // Check if the threshold is a valid number
+    if (parts.length > 1 && isNaN(threshold)) {
+        resultsContainer.textContent = "Error: Invalid threshold value. Please enter a number after '>' (e.g., 'AfD > 100').";
+        return;
+    }
+
     const query = `
-    query GetData($keyword: String) {
+    query GetData($merkmal: String) {
         allData(
-            Merkmal: $keyword
+            Merkmal: $merkmal
         ) {
             Merkmal
             ErststimmenAnzahl
@@ -57,7 +68,7 @@ async function searchData() {
     }
     `;
 
-    const variables = { keyword };
+    const variables = { merkmal };
 
     resultsContainer.innerHTML = '<span style="color: #007BFF;">Loading...</span>';
 
@@ -76,14 +87,18 @@ async function searchData() {
         if (data.errors && data.errors.length) {
             resultsContainer.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
-            let filteredData = data.data.allData.filter(item =>
-            (item.ErststimmenAnzahl > 0) || (item.ZweitstimmenAnzahl > 0)
-            );
+            // Apply the threshold filter
+            let filteredData = data.data.allData.filter(item => {
+                const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 0;
+                const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 0;
+                // Check if either Erststimmen or Zweitstimmen is greater than the threshold
+                return (erststimmen > threshold || zweitstimmen > threshold);
+            });
 
             filteredData.sort((a, b) => b.ZweitstimmenAnzahl - a.ZweitstimmenAnzahl);
 
             if (filteredData.length === 0) {
-                resultsContainer.textContent = "No results found with more than 0 votes.";
+                resultsContainer.textContent = `No results found for '${merkmal}' with more than ${threshold} votes.`;
             } else {
                 resultsContainer.innerHTML = '';
 
@@ -107,9 +122,9 @@ async function searchData() {
                 });
             }
         } else if (data.data && data.data.allData === null) {
-            resultsContainer.textContent = "No results found (null).";
+            resultsContainer.textContent = `No results found for '${merkmal}' (null).`;
         } else {
-            resultsContainer.textContent = "No data found.";
+            resultsContainer.textContent = `No data found for '${merkmal}'.`;
         }
 
         // Pass the IDs to the marker function
