@@ -1,7 +1,14 @@
 <img src="./static/images/Antifalogo_alt2.svg" style="float:left;padding:7px;" width="14%" style="float:left;padding-right:7px;"/>
 
 # rosa-rain
-Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
+These scripts load all the polling results from the 2024 Brandenburg state election as CSV files, using them to generate SVG and PDF documents based on a template. The frontend app allows for searching the data with GraphQL queries, displaying the filtered electoral districts and polling places on an Open Street Map (LeafLet).
+
+## Screenshots
+<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
+<img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
+
+## Project management
+https://codeberg.org/uss/rosa-rain/projects
 
 ## Table of contents
 * [**Getting Started**](#-getting-started)
@@ -123,12 +130,6 @@ DKP;-;-;-;0.0;0,0 %;00
 DLW;-;-;-;24.0;0,6 %;+06
 WU;-;-;-;6.0;0,2 %;+02
 ```
-## Screenshots
-<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
-<img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
-
-## Project management
-https://codeberg.org/uss/rosa-rain/projects
 
 ## License
 https://en.wikipedia.org/wiki/Antifa_(Germany)#/media/File:Antifalogo_alt2.svg
