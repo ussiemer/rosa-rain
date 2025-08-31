@@ -3,14 +3,21 @@
 # rosa-rain
 Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
 
+## Screenshots
 <img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
 <img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
 
+## Project management
+https://codeberg.org/uss/rosa-rain/projects
 
-1. Download latest chromium
+## Getting started
+1. Download latest chromium (If you want to scrape results, else start with 2.)
     
-2. Use a virtual environment.
+2. Clone repo and make use of a virtual environment.
 ```
+    git clone https://codeberg.org/uss/rosa-rain.git
+    cd rosa-rain
+    
     python3 -m venv venv
     source venv/bin/activate
 ```
