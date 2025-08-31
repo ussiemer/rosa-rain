@@ -31,6 +31,8 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
     source venv/bin/activate
 ```
 
+### Installation
+
 3. 'pip install -r requirements.txt'
 
 ```
