@@ -7,10 +7,11 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
 * [**Getting Started**](#-getting-started)
     * [Prerequisites](#prerequisites)
     * [Installation](#installation)
-* [**Usage**](#-usage)
+* [**Usage**](#usage)
     * [Run the Web Application](#run-the-web-application)
     * [Run Scripts](#run-scripts)
     * [API Endpoints](#api-endpoints)
+    * [Chrome Driver](#chrome-driver)
 * [**Data Structure**](#-data-structure)
 * [**Screenshots**](#-screenshots)
 * [**Project Management**](#-project-management)
@@ -55,31 +56,33 @@ Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als 
 ```
 ## Usage
 
-### Run app.py with hypercorn
+### Run the Web Application
 App will be exposed on 0.0.0.0:5000
 ```
     hypercorn app:app --workers 2
 ```
 
-### Run rosa-vote.py
+### Run Scripts
+
+#### Run rosa-vote.py
 Get all the election data from the official government website.
 ```
     python rosa-vote.py
 ```
 
-### Run rosa-rain.py
+#### Run rosa-rain.py
 If you want to output all pdf flyers, just run:
 ```
     python rosa-rain.py
 ```
 
-### Geolocate polling places
+#### Geolocate polling places
 To geolocate all polling places you will need a geocode.maps.co api key in a .env file
 ```
     GEOCODE_API_KEY=
 ```
 
-#### Run geocode.py
+##### Run geocode.py
 ```
     python geocode.py
 ```
