@@ -3,16 +3,25 @@
 # rosa-rain
 Diese Skripte laden alle Wahlergebnisse der Brandenburger Landtagswahl 2024 als CSV-Dateien, erstellen daraus SVGs und PDFs auf Basis der Vorlage. Das Frontend bietet die Möglichkeit, in den Daten mittels GraphQL-Abfragen zu suchen und zeigt Wahlkreise und Wahllokale gefiltert auf einer Open Street Map an.
 
-## Screenshots
-<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
-<img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
-
-## Project management
-https://codeberg.org/uss/rosa-rain/projects
+## Table of contents
+* [**Getting Started**](#-getting-started)
+    * [Prerequisites](#prerequisites)
+    * [Installation](#installation)
+* [**Usage**](#-usage)
+    * [Run the Web Application](#run-the-web-application)
+    * [Run Scripts](#run-scripts)
+    * [API Endpoints](#api-endpoints)
+* [**Data Structure**](#-data-structure)
+* [**Screenshots**](#-screenshots)
+* [**Project Management**](#-project-management)
+* [**License**](#-license)
 
 ## Getting started
+
+### Prerequisites
+
 1. Download latest chromium (If you want to scrape results, else start with 2.)
-    
+    
 2. Clone repo and make use of a virtual environment.
 ```
     git clone https://codeberg.org/uss/rosa-rain.git
@@ -42,32 +51,33 @@ https://codeberg.org/uss/rosa-rain/projects
     trio: An asynchronous I/O library.
     webdriver-manager: To automatically manage web browser drivers for Selenium.
 ```
+## Usage
 
-## Run app.py with hypercorn
+### Run app.py with hypercorn
 App will be exposed on 0.0.0.0:5000
 ```
     hypercorn app:app --workers 2
 ```
 
-## Run rosa-vote.py
+### Run rosa-vote.py
 Get all the election data from the official government website.
 ```
     python rosa-vote.py
 ```
 
-## Run rosa-rain.py
+### Run rosa-rain.py
 If you want to output all pdf flyers, just run:
 ```
     python rosa-rain.py
 ```
 
-## Geolocate polling places
+### Geolocate polling places
 To geolocate all polling places you will need a geocode.maps.co api key in a .env file
 ```
     GEOCODE_API_KEY=
 ```
 
-### Run geocode.py
+#### Run geocode.py
 ```
     python geocode.py
 ```
@@ -78,14 +88,15 @@ If you have problems with your chromdriver check:
     chromium_driver_path = "/usr/bin/chromedriver"
 ```
 
-## API paths
+### API endpoints
 GET:
 http://0.0.0.0:5000/api/polling-places
 
 POST:
 http://0.0.0.0:5000/graphql
 
-## CSV structure e.g.
+### data structure
+The csv results look like this (results/*.csv):
 ```
 Merkmal_Unnamed: 0_level_1;Erststimmen_Anzahl;Erststimmen_Anteil;Erststimmen_Gewinn;Zweitstimmen_Anzahl;Zweitstimmen_Anteil;Zweitstimmen_Gewinn
 Wahlberechtigte;5.216;-;-;5.216;-;-
@@ -107,9 +118,14 @@ DKP;-;-;-;0.0;0,0 %;00
 DLW;-;-;-;24.0;0,6 %;+06
 WU;-;-;-;6.0;0,2 %;+02
 ```
+## Screenshots
+<img src="./static/images/screenshot.png" style="float:left;padding:7px;" width="42%"/>
+<img src="./static/images/screenshot2.png" style="float:left;padding:7px;" width="42%"/>
 
+## Project management
+https://codeberg.org/uss/rosa-rain/projects
 
-### License
+## License
 https://en.wikipedia.org/wiki/Antifa_(Germany)#/media/File:Antifalogo_alt2.svg
 1930s logo of Antifaschistische Aktion
 
