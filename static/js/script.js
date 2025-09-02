@@ -300,6 +300,7 @@ async function loadGeoJSON() {
             Merkmal
             ErststimmenAnzahl
             ZweitstimmenAnzahl
+            districtId
         }
     }
     `;
@@ -340,9 +341,16 @@ async function loadGeoJSON() {
                             } else if (graphqlData.data && graphqlData.data.allData) {
                                 const allData = graphqlData.data.allData;
 
+
                                 // Aggregate data
                                 const aggregatedData = {};
                                 allData.forEach(item => {
+                                    // Check if the districtId exists and has a length greater than 2
+                                    if (item.districtId && item.districtId.toString().length > 2) {
+                                        // If it's more than 2 digits, skip this item entirely and do not aggregate it
+                                        return;
+                                    }
+
                                     const merkmal = item.Merkmal;
                                     const erststimmen = parseInt(item.ErststimmenAnzahl, 10) || 0;
                                     const zweitstimmen = parseInt(item.ZweitstimmenAnzahl, 10) || 0;
