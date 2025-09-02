@@ -345,21 +345,19 @@ async function loadGeoJSON() {
                                 // Aggregate data
                                 const aggregatedData = {};
                                 allData.forEach(item => {
-                                    // Check if the districtId exists and has a length greater than 2
-                                    if (item.districtId && item.districtId.toString().length > 2) {
-                                        // If it's more than 2 digits, skip this item entirely and do not aggregate it
-                                        return;
-                                    }
+                                    // Check if the districtId exists and has a length of 16
+                                    if (item.districtId && item.districtId.toString().length === 16) {
+                                        console.log(item);
+                                        const merkmal = item.Merkmal;
+                                        const erststimmen = parseInt(item.ErststimmenAnzahl, 10) || 0;
+                                        const zweitstimmen = parseInt(item.ZweitstimmenAnzahl, 10) || 0;
 
-                                    const merkmal = item.Merkmal;
-                                    const erststimmen = parseInt(item.ErststimmenAnzahl, 10) || 0;
-                                    const zweitstimmen = parseInt(item.ZweitstimmenAnzahl, 10) || 0;
-
-                                    if (!aggregatedData[merkmal]) {
-                                        aggregatedData[merkmal] = { ErststimmenAnzahl: 0, ZweitstimmenAnzahl: 0 };
+                                        if (!aggregatedData[merkmal]) {
+                                            aggregatedData[merkmal] = { ErststimmenAnzahl: 0, ZweitstimmenAnzahl: 0 };
+                                        }
+                                        aggregatedData[merkmal].ErststimmenAnzahl += erststimmen;
+                                        aggregatedData[merkmal].ZweitstimmenAnzahl += zweitstimmen;
                                     }
-                                    aggregatedData[merkmal].ErststimmenAnzahl += erststimmen;
-                                    aggregatedData[merkmal].ZweitstimmenAnzahl += zweitstimmen;
                                 });
 
                                 let tableContent = `
