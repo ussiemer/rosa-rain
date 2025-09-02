@@ -11,6 +11,7 @@ new ThemeToggle();
 // Global variables for map and data
 let allPollingPlaceData = [];
 let geojsonLayer = null;
+let deutschlandGeoJSONLayer = null; // New global variable for Germany layer
 let pollingPlaceMarkers = null;
 let map = null;
 let myRenderer = null;
@@ -31,23 +32,32 @@ const highlightStyle = {
     fillOpacity: 0.7
 };
 
-// --- CORE FUNCTIONS (NO JINJA) ---
-// Function to handle GraphQL search
+function getColor(d) {
+    const colors = [
+        '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+        '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+        '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
+        '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080',
+        '#ffffff', '#000000'
+    ];
+    let hash = 0;
+    for (let i = 0; i < d.length; i++) {
+        hash = d.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
 async function searchData() {
     const keyword = dom.searchInput.value;
     const resultsContainer = dom.resultsPre;
-
-    // Split the keyword into Merkmal and threshold
     const parts = keyword.split('>');
     const merkmal = parts[0].trim();
     const threshold = parts.length > 1 ? parseInt(parts[1].trim(), 10) : 0;
-
-    // Check if the threshold is a valid number
     if (parts.length > 1 && isNaN(threshold)) {
         resultsContainer.textContent = "Error: Invalid threshold value. Please enter a number after '>' (e.g., 'AfD > 100').";
         return;
     }
-
     const query = `
     query GetData($merkmal: String) {
         allData(
@@ -67,56 +77,41 @@ async function searchData() {
         }
     }
     `;
-
     const variables = { merkmal };
-
     resultsContainer.innerHTML = '<span style="color: #007BFF;">Loading...</span>';
-
     try {
         const response = await fetch('/graphql', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query, variables })
         });
-
         const data = await response.json();
-        console.log('GraphQL response:', data);
-
         let pollingPlaceIdsToShow = [];
-
         if (data.errors && data.errors.length) {
             resultsContainer.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
-            // Apply the threshold filter
             let filteredData = data.data.allData.filter(item => {
                 const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 0;
                 const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 0;
-                // Check if either Erststimmen or Zweitstimmen is greater than the threshold
                 return (erststimmen > threshold || zweitstimmen > threshold);
             });
-
             filteredData.sort((a, b) => b.ZweitstimmenAnzahl - a.ZweitstimmenAnzahl);
-
             if (filteredData.length === 0) {
                 resultsContainer.textContent = `No results found for '${merkmal}' with more than ${threshold} votes.`;
             } else {
                 resultsContainer.innerHTML = '';
-
                 pollingPlaceIdsToShow = filteredData
                 .map(item => item.districtId)
                 .filter(districtId => /^\d{16}$/.test(districtId));
-
                 filteredData.forEach(item => {
                     const resultDiv = document.createElement('div');
                     resultDiv.classList.add('result-item');
                     resultDiv.setAttribute('data-district-id', item.wahlkreisId);
                     resultDiv.onmouseover = () => { window.highlightDistrict(item.wahlkreisId); };
                     resultDiv.onmouseout = () => { window.resetHighlight(); };
-
                     const content = Object.entries(item)
                     .map(([k, v]) => `<strong>${k}:</strong> ${v}`)
                     .join('<br>');
-
                     resultDiv.innerHTML = content;
                     resultsContainer.appendChild(resultDiv);
                 });
@@ -126,21 +121,20 @@ async function searchData() {
         } else {
             resultsContainer.textContent = `No data found for '${merkmal}'.`;
         }
-
-        // Pass the IDs to the marker function
         showAllPollingPlaceMarkers(pollingPlaceIdsToShow);
-
     } catch (error) {
         resultsContainer.textContent = `Error: ${error.message}`;
         console.error('Error running GraphQL query:', error);
     }
 }
 
-// Functions to highlight and reset the district on the map
 window.highlightDistrict = (districtId) => {
+    // Get the actual L.geoJSON layer from the layer group
+    const geoJSON = geojsonLayer.getLayers()[0];
     const districtNumber = districtId.replace('wk', '');
-    if (geojsonLayer) {
-        geojsonLayer.eachLayer(function(layer) {
+
+    if (geoJSON) {
+        geoJSON.eachLayer(function(layer) {
             if (layer.feature.properties.gebietNr === districtNumber) {
                 layer.setStyle(highlightStyle);
             } else {
@@ -151,12 +145,14 @@ window.highlightDistrict = (districtId) => {
 };
 
 window.resetHighlight = () => {
-    if (geojsonLayer) {
-        geojsonLayer.resetStyle();
+    // Get the actual L.geoJSON layer from the layer group
+    const geoJSON = geojsonLayer.getLayers()[0];
+
+    if (geoJSON) {
+        geoJSON.resetStyle();
     }
 };
 
-// --- MAP AND MARKER MANAGEMENT FUNCTIONS ---
 async function loadAllPollingPlaceData() {
     let pollingPlaceIds = [];
     try {
@@ -171,8 +167,6 @@ async function loadAllPollingPlaceData() {
         console.error("Network error fetching polling place list:", error);
         return;
     }
-
-    // Create an array of promises, one for each fetch request
     const fetchPromises = pollingPlaceIds.map(id => {
         const filePath = window.STATIC_PATHS.wahllokalData + `${id}.csv`;
         return fetch(filePath)
@@ -198,20 +192,14 @@ async function loadAllPollingPlaceData() {
         })
         .catch(error => {
             console.error(`Error processing file ${filePath}:`, error);
-            return null; // Return null on error to avoid Promise.all failure
+            return null;
         });
     });
-
-    // Use Promise.all to wait for all fetch requests to complete
     const results = await Promise.all(fetchPromises);
-
-    // Filter out any null values from failed requests and store the valid data
     allPollingPlaceData = results.filter(data => data !== null);
-
     showAllPollingPlaceMarkers();
 }
 
-// Updated function to handle filtering
 function showAllPollingPlaceMarkers(idsToDisplay = null) {
     pollingPlaceMarkers.clearLayers();
     const customIcon = L.icon({
@@ -220,21 +208,15 @@ function showAllPollingPlaceMarkers(idsToDisplay = null) {
         iconAnchor: [10.5, 21],
         popupAnchor: [0, -25]
     });
-
-    // Determine which data to use based on the input
     let dataToUse = allPollingPlaceData;
     if (idsToDisplay && idsToDisplay.length > 0) {
         const idsSet = new Set(idsToDisplay);
         dataToUse = allPollingPlaceData.filter(data => idsSet.has(data.id));
     }
-
     dataToUse.forEach(data => {
         const marker = L.marker([data.lat, data.lon], { icon: customIcon });
         const initialPopupContent = `<b>${data.name}</b><br>ID: ${data.id}<br><br>Loading data...`;
-
         marker.bindPopup(initialPopupContent);
-
-        // Add a 'click' event listener to the marker
         marker.on('click', async function () {
             const query = `
             query GetPollingPlaceData($districtId: String!) {
@@ -253,25 +235,19 @@ function showAllPollingPlaceMarkers(idsToDisplay = null) {
                 }
             }
             `;
-
             const variables = { districtId: data.id };
-
             try {
                 const response = await fetch('/graphql', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query, variables })
                 });
-
                 const graphqlData = await response.json();
-
                 let popupHtml = `<b>${data.name}</b><br>ID: ${data.id}<br><br>`;
-
                 if (graphqlData.errors && graphqlData.errors.length) {
                     popupHtml += "Error: " + graphqlData.errors[0].message;
                 } else if (graphqlData.data && graphqlData.data.allData) {
                     const allData = graphqlData.data.allData;
-
                     let tableContent = `
                     <style>
                     .popup-table { width: 100%; border-collapse: collapse; }
@@ -288,11 +264,9 @@ function showAllPollingPlaceMarkers(idsToDisplay = null) {
                     </thead>
                     <tbody>
                     `;
-
                     allData.forEach(item => {
                         const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 'N/A';
                         const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 'N/A';
-
                         if (erststimmen !== 0 || zweitstimmen !== 0) {
                             tableContent += `
                             <tr>
@@ -303,38 +277,33 @@ function showAllPollingPlaceMarkers(idsToDisplay = null) {
                             `;
                         }
                     });
-
                     tableContent += `
                     </tbody>
                     </table>
                     `;
                     popupHtml += tableContent;
                 }
-
                 this.setPopupContent(popupHtml);
-
             } catch (error) {
                 console.error('GraphQL query failed:', error);
                 this.setPopupContent(`<b>${data.name}</b><br>ID: ${data.id}<br><br>Error fetching data.`);
             }
         });
-
         pollingPlaceMarkers.addLayer(marker);
     });
 }
 
-
-// Function to load and add GeoJSON data to the map
 async function loadGeoJSON() {
     try {
-        // Use the global variable
         const response = await fetch(window.STATIC_PATHS.geojson);
         const data = await response.json();
         const geojsonData = data.geoJSON;
-        if (geojsonLayer) {
-            map.removeLayer(geojsonLayer);
-        }
-        geojsonLayer = L.geoJSON(geojsonData, {
+
+        // Clear any existing layers before adding new ones
+        geojsonLayer.clearLayers();
+
+        // Create the L.geoJSON layer and store it in a local variable
+        const newGeojsonLayer = L.geoJSON(geojsonData, {
             renderer: myRenderer,
             style: function(feature) {
                 return defaultStyle;
@@ -344,61 +313,103 @@ async function loadGeoJSON() {
                     layer.bindPopup(feature.properties.name);
                 }
             }
-        }).addTo(map);
+        });
+
+        // Add the new L.geoJSON layer to your L.layerGroup
+        newGeojsonLayer.addTo(geojsonLayer);
+
+        // Add the layer group to the map if you want it to be visible by default
+        geojsonLayer.addTo(map);
+
+        // Now, call getBounds() on the correct layer instance
+        if (newGeojsonLayer.getLayers().length > 0) {
+            map.fitBounds(newGeojsonLayer.getBounds());
+        }
     } catch (error) {
         console.error('Error loading GeoJSON:', error);
     }
 }
 
-// --- INITIALIZATION ---
+async function loadDeutschlandGeoJSON() {
+    try {
+        const response = await fetch('static/data/deutschland_geo.json');
+        const data = await response.json();
+
+        // Check if CRS is defined and if it's not WGS84
+        if (data.crs && data.crs.properties && data.crs.properties.name === "urn:ogc:def:crs:EPSG::25832") {
+            // Define the projection for EPSG:25832
+            const projDef = '+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs';
+            const proj = new L.Proj.CRS('EPSG:25832', projDef);
+
+            const germanyLayer = L.Proj.geoJson(data, {
+                renderer: myRenderer,
+                style: {
+                    color: '#555',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillColor: '#888',
+                    fillOpacity: 0.2
+                },
+                onEachFeature: function(feature, layer) {
+                    if (feature.properties && feature.properties.name) {
+                        layer.bindPopup(feature.properties.name);
+                    }
+                }
+            });
+            germanyLayer.addTo(deutschlandGeoJSONLayer);
+        } else {
+            console.error('The GeoJSON file is not in EPSG:25832 projection or the CRS is missing.');
+        }
+
+    } catch (error) {
+        console.error('Error loading Germany GeoJSON:', error);
+    }
+}
+
 function initMapAndData() {
-    // myRenderer is now a global variable, so we just assign to it
     myRenderer = L.canvas();
     map = L.map('osm', {
         renderer: myRenderer
     }).setView([52.52, 13.12], 7);
-
-    // Define tile layers
     const osmStandard = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     });
-
     const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17,
         attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
     });
-
     const esriWorldImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     });
-
-    // **Night Layer** - A dark-themed map
     const cartoDarkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
     });
-
-    // Set CyclOSM as the default layer
     osmStandard.addTo(map);
-
     const baseLayers = {
         "OpenStreetMap": osmStandard,
         "Topography": openTopoMap,
         "Esri Sat": esriWorldImagery,
         "Night Map": cartoDarkMatter
     };
-
-    L.control.layers(baseLayers).addTo(map);
-    pollingPlaceMarkers = L.layerGroup().addTo(map);
-
-    // Call initial loading functions
+    pollingPlaceMarkers = L.layerGroup();
+    geojsonLayer = L.layerGroup();
+    deutschlandGeoJSONLayer = L.layerGroup(); // Initialize the new layer group
+    const overlayLayers = {
+        "Polling Places": pollingPlaceMarkers,
+        "Polling Districts": geojsonLayer,
+        "Germany Border": deutschlandGeoJSONLayer // Add the new layer to the control
+    };
+    L.control.layers(baseLayers, overlayLayers).addTo(map);
+    // Add the polling place markers layer to the map on initialization.
+    pollingPlaceMarkers.addTo(map);
     loadGeoJSON();
+    loadDeutschlandGeoJSON(); // Call the new function
     loadAllPollingPlaceData();
 }
 
-// Attach event listeners and expose the function globally
 document.addEventListener('DOMContentLoaded', () => {
     initMapAndData();
     const input = dom.searchInput;
@@ -411,5 +422,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (button) button.addEventListener('click', searchData);
 });
 
-// IMPORTANT: Expose the searchData function to the global scope
 window.searchData = searchData;

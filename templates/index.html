@@ -29,6 +29,9 @@
     </div>
     <script src="{{ url_for('static', filename='lib/leaflet.js') }}"
              crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
+
     <script>
         window.STATIC_PATHS = {
             wahllokalPin: '{{ url_for('static', filename='images/wahllokal_pin.svg') }}',
