@@ -143,13 +143,6 @@ def create_schema_from_df(df: pd.DataFrame):
             return records
     schema = graphene.Schema(query=Query)
 
-
-# Function to geolocate all polling places e.g.
-# only if districtId has 16 digits (1207353041890003) it is a polling place
-# the last 4 digits are the local polling place
-# geolocate the name / place / organisation using geocoding_service.py in the background
-# add lat lon to the graphql output
-
 app = Quart(__name__)
 
 async def load_data_and_create_schema():
@@ -196,9 +189,6 @@ async def graphql_endpoint():
     except Exception as e:
         print(f"GraphQL error: {e}")
         return jsonify({"errors": [{"message": str(e)}]}), 400
-
-# In your app.py file, add this new route:
-from quart import jsonify
 
 @app.route("/api/polling-places")
 async def get_polling_places():
