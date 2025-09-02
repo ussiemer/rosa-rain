@@ -293,6 +293,17 @@ function showAllPollingPlaceMarkers(idsToDisplay = null) {
 }
 
 async function loadGeoJSON() {
+    // GraphQL query to get data for a specific main electoral district
+    const mainDistrictQuery = `
+    query GetWahlkreisData($wahlkreisId: String!) {
+        allData(wahlkreisId: $wahlkreisId) {
+            Merkmal
+            ErststimmenAnzahl
+            ZweitstimmenAnzahl
+        }
+    }
+    `;
+
     try {
         const response = await fetch(window.STATIC_PATHS.geojson);
         const data = await response.json();
@@ -308,8 +319,83 @@ async function loadGeoJSON() {
                 return defaultStyle;
             },
             onEachFeature: function(feature, layer) {
-                if (feature.properties && feature.properties.name) {
-                    layer.bindPopup(feature.properties.name);
+                if (feature.properties && feature.properties.name && feature.properties.gebietNr) {
+                    const wahlkreisId = `wk${feature.properties.gebietNr}`; // Construct the ID
+                    layer.bindPopup('Loading data...'); // Initial loading state
+
+                    layer.on('popupopen', async function () {
+                        const variables = { wahlkreisId };
+                        try {
+                            const response = await fetch('/graphql', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ query: mainDistrictQuery, variables })
+                            });
+                            const graphqlData = await response.json();
+
+                            let popupHtml = `<b>${feature.properties.name}</b><br>Wahlkreis: ${wahlkreisId}<br><br>`;
+
+                            if (graphqlData.errors) {
+                                popupHtml += "Error: " + graphqlData.errors[0].message;
+                            } else if (graphqlData.data && graphqlData.data.allData) {
+                                const allData = graphqlData.data.allData;
+
+                                // Aggregate data
+                                const aggregatedData = {};
+                                allData.forEach(item => {
+                                    const merkmal = item.Merkmal;
+                                    const erststimmen = parseInt(item.ErststimmenAnzahl, 10) || 0;
+                                    const zweitstimmen = parseInt(item.ZweitstimmenAnzahl, 10) || 0;
+
+                                    if (!aggregatedData[merkmal]) {
+                                        aggregatedData[merkmal] = { ErststimmenAnzahl: 0, ZweitstimmenAnzahl: 0 };
+                                    }
+                                    aggregatedData[merkmal].ErststimmenAnzahl += erststimmen;
+                                    aggregatedData[merkmal].ZweitstimmenAnzahl += zweitstimmen;
+                                });
+
+                                let tableContent = `
+                                <style>
+                                .popup-table { width: 100%; border-collapse: collapse; }
+                                .popup-table th, .popup-table td { border: 1px solid #ddd; padding: 4px; text-align: left; font-size: 10px; }
+                                .popup-table th { background-color: #f2f2f2; }
+                                </style>
+                                <table class="popup-table">
+                                <thead>
+                                <tr>
+                                <th>Merkmal</th>
+                                <th>Erststimmen</th>
+                                <th>Zweitstimmen</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                `;
+
+                                Object.entries(aggregatedData).forEach(([merkmal, votes]) => {
+                                    if (votes.ErststimmenAnzahl > 0 || votes.ZweitstimmenAnzahl > 0) {
+                                        tableContent += `
+                                        <tr>
+                                        <td>${merkmal}</td>
+                                        <td>${votes.ErststimmenAnzahl}</td>
+                                        <td>${votes.ZweitstimmenAnzahl}</td>
+                                        </tr>
+                                        `;
+                                    }
+                                });
+
+                                tableContent += `</tbody></table>`;
+                                popupHtml += tableContent;
+                            } else {
+                                popupHtml += "No data found for this district.";
+                            }
+
+                            this.setPopupContent(popupHtml);
+
+                        } catch (error) {
+                            console.error('GraphQL query failed:', error);
+                            this.setPopupContent(`<b>${feature.properties.name}</b><br>Error fetching data.`);
+                        }
+                    });
                 }
             }
         });
