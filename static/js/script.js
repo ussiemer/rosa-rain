@@ -65,11 +65,7 @@ async function searchData() {
         ) {
             Merkmal
             ErststimmenAnzahl
-            ErststimmenAnteil
-            ErststimmenGewinn
             ZweitstimmenAnzahl
-            ZweitstimmenAnteil
-            ZweitstimmenGewinn
             districtId
             wahlkreisId
             sourceType
@@ -90,19 +86,22 @@ async function searchData() {
         if (data.errors && data.errors.length) {
             resultsContainer.textContent = "GraphQL error: " + data.errors.map(e => e.message).join('; ');
         } else if (data.data && data.data.allData && Array.isArray(data.data.allData)) {
-            let filteredData = data.data.allData.filter(item => {
-                const erststimmen = item.ErststimmenAnzahl !== null ? item.ErststimmenAnzahl : 0;
-                const zweitstimmen = item.ZweitstimmenAnzahl !== null ? item.ZweitstimmenAnzahl : 0;
+            // First, filter to get only items with a valid 16-digit districtId
+            let validDistrictData = data.data.allData.filter(item => {
+                return typeof item.districtId === 'string' && /^\d{16}$/.test(item.districtId);
+            });
+            // Then, apply the threshold filter to the valid data
+            let filteredData = validDistrictData.filter(item => {
+                const erststimmen = item.ErststimmenAnzahl !== null ? parseInt(item.ErststimmenAnzahl, 10) : 0;
+                const zweitstimmen = item.ZweitstimmenAnzahl !== null ? parseInt(item.ZweitstimmenAnzahl, 10) : 0;
                 return (erststimmen > threshold || zweitstimmen > threshold);
             });
-            filteredData.sort((a, b) => b.ZweitstimmenAnzahl - a.ZweitstimmenAnzahl);
+            filteredData.sort((a, b) => (parseInt(b.ZweitstimmenAnzahl, 10) || 0) - (parseInt(a.ZweitstimmenAnzahl, 10) || 0));
             if (filteredData.length === 0) {
-                resultsContainer.textContent = `No results found for '${merkmal}' with more than ${threshold} votes.`;
+                resultsContainer.textContent = `No results found for '${merkmal}' with more than ${threshold} votes and a valid 16-digit districtId.`;
             } else {
                 resultsContainer.innerHTML = '';
-                pollingPlaceIdsToShow = filteredData
-                .map(item => item.districtId)
-                .filter(districtId => /^\d{16}$/.test(districtId));
+                pollingPlaceIdsToShow = filteredData.map(item => item.districtId);
                 filteredData.forEach(item => {
                     const resultDiv = document.createElement('div');
                     resultDiv.classList.add('result-item');
