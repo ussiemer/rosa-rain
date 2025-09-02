@@ -346,11 +346,11 @@ async function loadGeoJSON() {
                                 const aggregatedData = {};
                                 allData.forEach(item => {
                                     // Check if the districtId exists and has a length of 16
-                                    if (item.districtId && item.districtId.toString().length === 16) {
+                                    if (item.districtId && item.districtId.toString().length >= 13 ) {
                                         console.log(item);
                                         const merkmal = item.Merkmal;
-                                        const erststimmen = parseInt(item.ErststimmenAnzahl, 10) || 0;
-                                        const zweitstimmen = parseInt(item.ZweitstimmenAnzahl, 10) || 0;
+                                        const erststimmen = parseInt(item.ErststimmenAnzahl) || 0;
+                                        const zweitstimmen = parseInt(item.ZweitstimmenAnzahl) || 0;
 
                                         if (!aggregatedData[merkmal]) {
                                             aggregatedData[merkmal] = { ErststimmenAnzahl: 0, ZweitstimmenAnzahl: 0 };
