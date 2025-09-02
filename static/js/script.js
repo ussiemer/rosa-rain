@@ -378,6 +378,13 @@ async function loadGeoJSON() {
                                 `;
 
                                 Object.entries(aggregatedData).forEach(([merkmal, votes]) => {
+                                    if(merkmal === "Wahlberechtigte" ||
+                                        merkmal === "Wählende" ||
+                                        merkmal === "Ungültige Stimmen"  ||
+                                        merkmal === "Gültige Stimmen"
+                                    ){
+                                        return;
+                                    }
                                     if (votes.ErststimmenAnzahl > 0 || votes.ZweitstimmenAnzahl > 0) {
                                         tableContent += `
                                         <tr>
